@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Agentic Profile library for discovery, authentication, and communication",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup",
     "test": "jest"
@@ -20,13 +21,8 @@
   "homepage": "https://github.com/agentic-profile/agentic-profile-auth#readme",
   "dependencies": {
     "@noble/ed25519": "^2.2.3",
-    "@types/basic-auth": "^1.1.8",
-    "@types/express": "^5.0.0",
     "@types/node": "^22.9.2",
-    "axios": "^1.7.9",
-    "basic-auth": "^2.0.1",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.1"
+    "axios": "^1.7.9"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
