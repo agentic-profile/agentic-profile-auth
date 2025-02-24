@@ -1,7 +1,7 @@
 {
-  "name": "agentic-profile-node",
+  "name": "@agentic-profile/auth",
   "version": "0.1.0",
-  "description": "Protocol for AI Agent discovery, authentication, and communication",
+  "description": "Agentic Profile library for discovery, authentication, and communication",
   "main": "index.js",
   "scripts": {
     "dev": "npx ts-node-dev --respawn --transpile-only index.local.js",
@@ -9,8 +9,16 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agentic-profile/agentic-profile-auth.git"
+  },
   "author": "Mike Prince",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/agentic-profile/agentic-profile-auth/issues"
+  },
+  "homepage": "https://github.com/agentic-profile/agentic-profile-auth#readme",
   "dependencies": {
     "@noble/ed25519": "^2.2.3",
     "@types/basic-auth": "^1.1.8",
