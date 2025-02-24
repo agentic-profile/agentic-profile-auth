@@ -1,19 +1,19 @@
-import { createKeypair } from "./ed25519.js";
+import { createKeypair } from "../src/ed25519.ts";
 
 import {
     createChallenge,
     handleAuthorization,
     handleLogin,
-} from "./server/agentic-server-authentication.js"
+} from "../src/server/agentic-server-authentication.ts"
 import {
     signChallenge,
-} from "./client/agentic-client-authentication.js"
+} from "../src/client/agentic-client-authentication.ts"
 
 import {
     SignedChallenge,
     ClientAgentSession,
     AgentAuthStore
-} from "./models.js"
+} from "../src/models.ts"
 
 interface ChallengeEntry {
     id: number,
