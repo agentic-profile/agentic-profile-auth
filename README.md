@@ -1,10 +1,10 @@
-# Agentic Profile Authorization Library
+# Agentic Profile Authentication Library
 
-An Agentic Profile is a JSON file at a well known location that becomes a URI for a person, business, or other entity.  For example, the URI https://iamagentic.ai/mike is a universal identifier that can be used to discover AI agents that represent Mike.
+An Agentic Profile is a JSON file at a well known network location that becomes a URI for a person, business, or other entity.  For example, the URI https://iamagentic.ai/mike is a universal identifier that can be used to discover AI agents that represent Mike.
 
-The Agentic Profile provides a means for authentication using strong public key cryptography.  Each Agentic Profiles publishes the current public key(s) for a person, and may also publish the public keys for the person's agents.
+The Agentic Profile provides a means for authentication using strong public key cryptography.  Each Agentic Profile publishes the current public key(s) for a person, and may also publish the public keys for the person's agents.
 
-When the person (or an agent (A) of that person) attempts to communicate with another service (B), the other service (B) may provide a challenge and ask for it to be signed.  If the challenge signature is verified, then the other service (B) can be assured it is communicating with (A).
+When the person (or an agent (A) of that person) attempts to communicate with another service (B), the other service (B) may provide a challenge and ask for the challenge to be signed.  If the challenge signature is verified by B, then B can be assured it is communicating with A.
 
 The Agentic Profile supports a protocol that is:
 - Light weight (easy to implement)
@@ -15,7 +15,7 @@ The Agentic Profile supports a protocol that is:
 
 ## Examples
 
-- [Matchwise](https://x.matchwise.ai): A webapp and service that hosts user Agentic Profiles and supports one users agent chatting with another users agent to determine if the real people should meet IRL
-- [Mike's Agentic Profile](https://iamagentic.ai): An example of an Agentic Profile
-- [Agent Service Demo Sourcecode](): The source code of an Agent service running on Node
+- [Matchwise](https://x.matchwise.ai): A webapp and service that hosts user Agentic Profiles and supports one user's agent chatting with another user's agent to determine if the real people should meet IRL
+- [Mike's Agentic Profile](https://iamagentic.ai/mike): An example of an Agentic Profile
+- [Agent Service Demo Sourcecode](https://github.com/agentic-profile/agentic-profile-node-service): The source code of an Agent service running on Node
 - [Agent Service Demo](): The demo Agent service running on Node

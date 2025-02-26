@@ -1,7 +1,7 @@
 {
   "name": "@agentic-profile/auth",
-  "version": "0.1.1",
-  "description": "Agentic Profile library for discovery, authentication, and communication",
+  "version": "0.1.2",
+  "description": "Agentic Profile library for discovery, authentication, and communication with AI Agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

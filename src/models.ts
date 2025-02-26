@@ -104,7 +104,7 @@ export interface AgenticProfile {
 
 export interface AgentAuthStore {
     saveClientSession: ( sessionKey: string, profileUri: string, agentUrl?: string )=>Promise<number>
-    fetchClientSession: (id:number)=>Promise<ClientAgentSession | null> 
+    fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
     saveChallenge: (challenge:string)=>Promise<number>
     deleteChallenge: (id:number)=>void
 }
