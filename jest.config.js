@@ -1,9 +1,9 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} **/
 export default {
-    preset: "ts-jest",
-    testEnvironment: "node",
-    transform: {
-        "^.+\.(ts|tsx)?$": ["ts-jest",{}],
+    verbose: true,
+    "transformIgnorePatterns": [
+        "node_modules/(?!@noble/ed25519)"
+    ],
+    moduleNameMapper: {
+        '^(\\.{1,2}/.*)\\.js$': '$1',
     },
-    extensionsToTreatAsEsm: [".ts"]
-};
+}

@@ -2,6 +2,10 @@
 // Auth
 //
 
+export type CanonicalURI = string;
+export type VanityURI = string;
+export type ProfileURI = CanonicalURI | VanityURI;
+
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
     type: "agentic-challenge/1.0",
@@ -11,7 +15,7 @@ export interface AgenticChallenge {
 
 // Body of HTTP login POST request
 export interface SignedChallenge {
-    profileUri: string, // uri of user/agent => about/profile
+    profileUri: ProfileURI, // uri of user/agent => about/profile
     agentUrl?: string,  // optional, specific agent doing signing
     publicKey: string,  // base64
     challenge: string,  // opaque
@@ -32,18 +36,18 @@ export interface LoginResult {
 // Session
 //
 
-// session tells server who is communicating with them... profileUri+optional agentUrl
+// On the remote/server side, session tracks who is communicating with them... profileUri+optional agentUrl
 export interface ClientAgentSession {
     id: number,
     created: Date,
-    profileUri: string, // uri of user/agent about/profile
-    agentUrl?: string,  // optional agentUrl when agent keyring used
+    profileUri: ProfileURI,     // uri of user/agent about/profile
+    agentUrl?: string,          // optional agentUrl when agent keyring used
     sessionKey: string
 }
 
 // on client side, session/agent token for communicating with remote/server agentUrl
 export interface RemoteAgentSession {
-    uid: number,            // implicit profileUri
+    uid: number,            // implicit client profileUri
     created: Date,
     remoteAgentUrl: string, // endpoint we are communicating with
     agentToken: string      // opaque token (actually base64 JSON of {id,sessionKey})
@@ -92,7 +96,7 @@ export interface AgenticProfile {
     name: string,
     handle?: string,
     ttl: number,    // seconds, default 1 day/86400 seconds
-    canonicalUri?: string,
+    canonicalUri?: CanonicalURI,
     keyring: AgentKey[],
     agents: AgentService[],
     personas: Persona[]
@@ -102,9 +106,16 @@ export interface AgenticProfile {
 // Storage
 //
 
+export interface ChallengeRecord {
+    id: number,
+    challenge: string,
+    created: Date
+}
+
 export interface AgentAuthStore {
     saveClientSession: ( sessionKey: string, profileUri: string, agentUrl?: string )=>Promise<number>
     fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
     saveChallenge: (challenge:string)=>Promise<number>
+    fetchChallenge: (id:number)=>Promise<ChallengeRecord>
     deleteChallenge: (id:number)=>void
 }

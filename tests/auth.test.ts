@@ -1,29 +1,22 @@
-import { createKeypair } from "../dist/ed25519.js";
+import { createKeypair } from "../src/ed25519";
 
 import {
     createChallenge,
     handleAuthorization,
     handleLogin,
-} from "../dist/server/agentic-server-authentication.js"
+} from "../src/server/server-authentication";
 import {
     signChallenge,
-} from "../dist/client/agentic-client-authentication.js"
-
+} from "../src/client/client-authentication";
 import {
-    SignedChallenge,
+    ChallengeRecord,
     ClientAgentSession,
     AgentAuthStore
-} from "../dist/models.js"
-
-interface ChallengeEntry {
-    id: number,
-    challenge: string,
-    created: Date
-}
+} from "../src/models"
 
 const sessionMap = new Map<number,ClientAgentSession>();
 let nextSessionId = 1;
-const challengeMap = new Map<number,ChallengeEntry>();
+const challengeMap = new Map<number,ChallengeRecord>();
 let nextChallengeId = 1;
 
 const authStore = {
@@ -38,16 +31,19 @@ const authStore = {
     },
     saveChallenge: async (challenge:string)=>{
         const id = nextChallengeId++;
-        const entry = { id, challenge, created: new Date() } as ChallengeEntry;
+        const entry = { id, challenge, created: new Date() } as ChallengeRecord;
         challengeMap.set( id, entry );
         return id;
+    },
+    fetchChallenge: async (id:number)=>{
+        return challengeMap.get( id );
     },
     deleteChallenge: async (id:number)=>{
         challengeMap.delete( id );
     }
 } as AgentAuthStore;
 
-export async function agentTest() {
+async function sessionLifecycle() {
     console.log('Starting agent tests...');
 
     let start = Date.now();
@@ -67,7 +63,15 @@ export async function agentTest() {
 
     const session = await handleAuthorization( 'Agentic ' + agentToken, authStore );
     console.log( "Verified login/session", { session } );
+
+    return true;
 }
+
+describe("Authentication", () => {
+    test('session lifecycle', async () => {
+        await expect( sessionLifecycle() ).resolves.toBe(true);
+    });
+})
 
 function asDuration(time:number) {
     return (Date.now() - time) + 'ms';

@@ -1,13 +1,12 @@
 import crypto from "crypto";
-import axios from "axios";
+//import axios from "axios";
 
-import { sign, verify } from "../ed25519.js";
+import { verify } from "../ed25519.js";
 
 import {
     AgentAuthStore,
     AgentToken,
     AgenticChallenge,
-    AgenticProfile,
     SignedChallenge
 } from "../models.js"
 
@@ -31,6 +30,8 @@ export async function handleLogin( signedChallenge: SignedChallenge, store: Agen
     // verify publicKey in signature is from user specified in url
     const { signature, challenge, publicKey, profileUri, agentUrl } = signedChallenge;
 
+    // TODO ensure challenge is same as was provided
+
     /*
     const response = await axios.get( signedChallenge.url );
     const user = response.data as PublicUser;
@@ -41,6 +42,7 @@ export async function handleLogin( signedChallenge: SignedChallenge, store: Agen
         */
 
     const isValid = await verify( signature, challenge, publicKey );
+    console.log( 'isValid', isValid, signature, challenge, publicKey );
     if( !isValid )
         throw new Error( "Invalid signed challenge" );
 
