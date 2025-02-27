@@ -45,7 +45,7 @@ export async function handleLogin( signedChallenge: SignedChallenge, store: Agen
     let canonicalUri, agentUrl; 
     try {
         ({ canonicalUri, agentUrl } = base64toObject<Attestation>( base64Attestation ));
-    } catch(err) {
+    } catch( err: any ) {
         throw new Error('Failed to parse attestation: ' + err.message );
     }
     if( !canonicalUri )
