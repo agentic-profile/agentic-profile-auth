@@ -1,12 +1,15 @@
 import crypto from "crypto";
-//import axios from "axios";
+import axios from "axios";
 
 import { verify } from "../ed25519.js";
 
 import {
     AgentAuthStore,
+    AgentKey,
     AgentToken,
     AgenticChallenge,
+    AgenticProfile,
+    Attestation,
     SignedChallenge
 } from "../models.js"
 
@@ -26,35 +29,73 @@ export async function createChallenge( store: AgentAuthStore ) {
     } as AgenticChallenge;
 }
 
-export async function handleLogin( signedChallenge: SignedChallenge, store: AgentAuthStore ) {
-    // verify publicKey in signature is from user specified in url
-    const { signature, challenge, publicKey, profileUri, agentUrl } = signedChallenge;
+export interface LoginMocks {
+    agenticProfile?: AgenticProfile
+}
 
-    // TODO ensure challenge is same as was provided
+export interface LoginOptions {
+    mocks?: LoginMocks
+}
 
-    /*
-    const response = await axios.get( signedChallenge.url );
-    const user = response.data as PublicUser;
-    const { keyring } = data as PublicUser;
-    const hasKey = keyring.some(e=>e.publicKey === signedChallenge.publicKey);
-    if( !hasKey )
-        throw new ServerError([4,1],"Public key not found on users keyring");
-        */
+export async function handleLogin( signedChallenge: SignedChallenge, store: AgentAuthStore, options?: LoginOptions ) {
+    const { challenge, attestation: base64Attestation, signature, publicKey } = signedChallenge;
 
-    const isValid = await verify( signature, challenge, publicKey );
-    console.log( 'isValid', isValid, signature, challenge, publicKey );
+    if( !base64Attestation )
+        throw new Error('Missing attestation');
+    let canonicalUri, agentUrl; 
+    try {
+        ({ canonicalUri, agentUrl } = base64toObject<Attestation>( base64Attestation ));
+    } catch(err) {
+        throw new Error('Failed to parse attestation: ' + err.message );
+    }
+    if( !canonicalUri )
+        throw new Error('Missing canonicalUri in attestation');
+
+    // ensure challenge is same as was provided
+    const challengeId = parseInt( challenge.split(":")[0] );
+    const record = await store.fetchChallenge( challengeId );
+    if( !record )
+        throw new Error('Invalid or expired challenge: ' + challenge );
+    const expectedChallenge = challengeId + ':' + record.challenge;
+    if( expectedChallenge !== challenge )
+        throw new Error('Challenge is different than offered: ' + expectedChallenge + ' != ' + challenge );
+
+    // verify publicKey in signature is from user specified in canonical url
+
+    let profile = options?.mocks?.agenticProfile;
+    if( !profile ) {
+        const response = await axios.get( canonicalUri );
+        profile = response.data as AgenticProfile;
+    }
+    verifyPublicKey( profile, publicKey, agentUrl );
+
+    const message = challenge + '.' + base64Attestation;
+    const isValid = await verify( signature, message, publicKey );
     if( !isValid )
-        throw new Error( "Invalid signed challenge" );
+        throw new Error( "Invalid signed challenge and attestation" );
 
     const sessionKey = createSessionKey();
-    const id = await store.saveClientSession( sessionKey, profileUri, agentUrl );
+    const id = await store.saveClientSession( sessionKey, canonicalUri, agentUrl );
     const agentToken = objectToBase64<AgentToken>({ id, sessionKey }); // prepare for use in HTTP authorization header
 
     // clean up
-    const challengeId = parseInt( challenge.split(":")[0] );
     await store.deleteChallenge( challengeId );
 
     return { agentToken };  // agent token is base64 of JSON
+}
+
+function verifyPublicKey( profile: AgenticProfile, publicKey: string, agentUrl?: string ) {
+    const agent = profile.agents?.find(e=>e.url === agentUrl);
+    if( agent && agent.keyring )
+        ensureKeyInRing( publicKey, agent.keyring );
+    else
+        ensureKeyInRing( publicKey, profile.keyring );
+}
+
+function ensureKeyInRing( publicKey: string, keyring: AgentKey[] ) {
+    const hasKey = keyring?.some(e=>e.publicKey === publicKey);
+    if( !hasKey )
+        throw new Error("Public key not found in agentic profile keyrings"); 
 }
 
 // authorization: "Agent <JSON encoded token>"

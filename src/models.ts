@@ -3,8 +3,8 @@
 //
 
 export type CanonicalURI = string;
-export type VanityURI = string;
-export type ProfileURI = CanonicalURI | VanityURI;
+export type AliasURI = string;
+export type ProfileURI = CanonicalURI | AliasURI;
 
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
@@ -13,13 +13,17 @@ export interface AgenticChallenge {
     login: string       // URL to POST signed challenge to, may be relative to endpoint that requested authentication
 }
 
+export interface Attestation {
+    canonicalUri: CanonicalURI,
+    agentUrl?: string,  // optional, specific agent doing signing
+}
+
 // Body of HTTP login POST request
 export interface SignedChallenge {
-    profileUri: ProfileURI, // uri of user/agent => about/profile
-    agentUrl?: string,  // optional, specific agent doing signing
-    publicKey: string,  // base64
-    challenge: string,  // opaque
-    signature: string   // base64
+    publicKey: string,      // base64
+    challenge: string,      // opaque
+    attestation: string,    // base64(toJson(Attestation))
+    signature: string       // base64 of sign(challenge.payload)
 }
 
 // JSON encoding is used to wrap HTTP authorization value after 'Agentic'
@@ -40,14 +44,14 @@ export interface LoginResult {
 export interface ClientAgentSession {
     id: number,
     created: Date,
-    profileUri: ProfileURI,     // uri of user/agent about/profile
-    agentUrl?: string,          // optional agentUrl when agent keyring used
+    canonicalUri: CanonicalURI, // uri of user/agent about/profile
+    agentUrl?: string,          // optional agentUrl when agent keyring used, this is usually the endpoint I provide
     sessionKey: string
 }
 
 // on client side, session/agent token for communicating with remote/server agentUrl
 export interface RemoteAgentSession {
-    uid: number,            // implicit client profileUri
+    uid: number,            // implicit client canonicalUri
     created: Date,
     remoteAgentUrl: string, // endpoint we are communicating with
     agentToken: string      // opaque token (actually base64 JSON of {id,sessionKey})
@@ -94,9 +98,10 @@ export interface Persona {
 export interface AgenticProfile {
     uid: number,
     name: string,
-    handle?: string,
+    alias?: string,
     ttl: number,    // seconds, default 1 day/86400 seconds
     canonicalUri?: CanonicalURI,
+    aliasUris?: AliasURI[],
     keyring: AgentKey[],
     agents: AgentService[],
     personas: Persona[]
@@ -113,9 +118,12 @@ export interface ChallengeRecord {
 }
 
 export interface AgentAuthStore {
-    saveClientSession: ( sessionKey: string, profileUri: string, agentUrl?: string )=>Promise<number>
+    // Manage sessions with clients that are calling our HTTP endpoints
+    saveClientSession: ( sessionKey: string, canonicalUri: string, agentUrl?: string )=>Promise<number>
     fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
+
+    // For the remote agent server, to track challenges that have been issued
     saveChallenge: (challenge:string)=>Promise<number>
-    fetchChallenge: (id:number)=>Promise<ChallengeRecord>
+    fetchChallenge: (id:number)=>Promise<ChallengeRecord | undefined>
     deleteChallenge: (id:number)=>void
 }
