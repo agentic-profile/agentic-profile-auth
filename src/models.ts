@@ -119,7 +119,7 @@ export interface ChallengeRecord {
 
 export interface AgentAuthStore {
     // Manage sessions with clients that are calling our HTTP endpoints
-    saveClientSession: ( sessionKey: string, canonicalUri: string, agentUrl?: string )=>Promise<number>
+    saveClientSession: ( sessionKey: string, canonicalUri: CanonicalURI, agentUrl?: string )=>Promise<number>
     fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
 
     // For the remote agent server, to track challenges that have been issued
