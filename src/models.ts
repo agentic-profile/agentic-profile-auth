@@ -40,12 +40,12 @@ export interface LoginResult {
 // Session
 //
 
-// On the remote/server side, session tracks who is communicating with them... profileUri+optional agentUrl
+// On the remote/server side, session tracks client that is communicating with them... canonicalUri+optional agentUrl
 export interface ClientAgentSession {
     id: number,
     created: Date,
     canonicalUri: CanonicalURI, // uri of user/agent about/profile
-    agentUrl?: string,          // optional agentUrl when agent keyring used, this is usually the endpoint I provide
+    agentUrl?: string,          // optional agentUrl when client agent keyring used
     sessionKey: string
 }
 

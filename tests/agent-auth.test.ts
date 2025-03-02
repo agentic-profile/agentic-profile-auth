@@ -17,38 +17,19 @@ import {
     ChallengeRecord,
     ClientAgentSession
 } from "../src/models"
-import { BASE_64_REGEX, mutateBase64, isBase64key } from "./util";
+import {
+    authStore,
+    BASE_64_REGEX,
+    mutateBase64,
+    isBase64key
+} from "./util";
 
-const sessionMap = new Map<number,ClientAgentSession>();
-let nextSessionId = 1;
-const challengeMap = new Map<number,ChallengeRecord>();
-let nextChallengeId = 1;
+//
+// Tests an agent specific signature using a publicKey in an agents keyring (e.g. agenticProfile.agents[N].keyring )
+// NOT in the general agenticProfile.keyring
+//
 
-const authStore = {
-    saveClientSession: async ( sessionKey: string, profileUri:string, agentUrl:string )=>{
-        const id = nextSessionId++;
-        const session = { id, sessionKey, profileUri, agentUrl, created: new Date() } as ClientAgentSession;
-        sessionMap.set( id, session );
-        return id;
-    },
-    fetchClientSession: async (id:number)=>{
-        return sessionMap.get( id );  
-    },
-    saveChallenge: async (challenge:string)=>{
-        const id = nextChallengeId++;
-        const entry = { id, challenge, created: new Date() } as ChallengeRecord;
-        challengeMap.set( id, entry );
-        return id;
-    },
-    fetchChallenge: async (id:number)=>{
-        return challengeMap.get( id );
-    },
-    deleteChallenge: async (id:number)=>{
-        challengeMap.delete( id );
-    }
-} as AgentAuthStore;
-
-describe("Agent Authentication", () => {
+describe("Agent Specific Authentication", () => {
 
     let keypair, keyring, agenticProfile, agenticChallenge, signedChallenge;
 
@@ -60,16 +41,22 @@ describe("Agent Authentication", () => {
                 expires: new Date('2030-4-1')
             }
         ];
+        const agent = {
+            url: "https://agents.matchwise.ai/v1/agents/7/agentic-chat",
+            keyring
+        };
+
         agenticProfile = {
             name: 'James',
-            keyring
+            keyring: [],
+            agents: [ agent ]
         } as AgenticProfile;
 
         agenticChallenge = await createChallenge( authStore );
 
         const attestation = {
             canonicalUri: "https://iamagentic.ai/people/7",
-            agentUrl: "https://agents.matchwise.ai/v1/agents/7/agentic-chat"
+            agentUrl: agent.url
         };
         signedChallenge = await signChallenge({ agenticChallenge, keypair, attestation });
     });
@@ -117,7 +104,17 @@ describe("Agent Authentication", () => {
         try {
             await handleLogin( badChallenge, authStore, options );
         } catch(error) {
-            expect(error.message.startsWith('Failed to parse attestation:')).toBe( true );
+            console.log( 'corrupted attestation2', error.message );
+
+            // when the agent url was corrupted in the attestation
+            const isKeyNotFound = error.message === "Public key not found in agentic profile keyrings";
+
+            // when the JSON is valid, but is different than what was signed
+            const isSigInvalid = error.message === "Invalid signed challenge and attestation";
+
+            // when the base64 encoding is currupted and the JSON becomes invalid
+            const isParseFailure = error.message.startsWith('Failed to parse attestation:');
+            expect( isKeyNotFound || isParseFailure || isSigInvalid ).toBe( true );
         }
     });
 

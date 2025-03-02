@@ -18,6 +18,7 @@ type Params = {
 // This is done client/initiator side
 // challenge: opaque string, maybe <id>:<rawchallenge>, or maybe not ;)
 // attestation includes the clients canonicalUri, and optionaly the agentUrl
+// if the agentUrl is included, the publicKey MUST be present in the agents keyring!!
 export async function signChallenge({ agenticChallenge, keypair, attestation }: Params) {
     const { publicKey, privateKey } = keypair;
     const { challenge } = agenticChallenge;

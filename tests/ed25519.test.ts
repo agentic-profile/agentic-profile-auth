@@ -7,7 +7,6 @@ describe("Ed25519", () => {
 
     beforeAll( async () => {
         keypair = await createKeypair();
-        //console.log( 'keypair', toJSON(keypair) );
         ({ publicKey, privateKey } = keypair);
     });
 
@@ -20,8 +19,6 @@ describe("Ed25519", () => {
 
     test('sign message', async () => {
         signature = await sign( message, privateKey );
-        //console.log( 'signature', signature );
-
         expect( BASE_64_REGEX.test( signature ) ).toBe( true );
     });
 

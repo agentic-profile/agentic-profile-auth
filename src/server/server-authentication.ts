@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import axios from "axios";
 
 import { verify } from "../ed25519.js";
 
@@ -16,6 +15,7 @@ import {
 import {
     base64toObject,
     clean64,
+    fetchAgenticProfile,
     objectToBase64,
 } from "../util.js"
 
@@ -58,14 +58,12 @@ export async function handleLogin( signedChallenge: SignedChallenge, store: Agen
         throw new Error('Invalid or expired challenge: ' + challenge );
     const expectedChallenge = challengeId + ':' + record.challenge;
     if( expectedChallenge !== challenge )
-        throw new Error('Challenge is different than offered: ' + expectedChallenge + ' != ' + challenge );
+        throw new Error('Signed challenge is different than offered: ' + expectedChallenge + ' != ' + challenge );
 
     // verify publicKey in signature is from user specified in canonical url
-
     let profile = options?.mocks?.agenticProfile;
     if( !profile ) {
-        const response = await axios.get( canonicalUri );
-        profile = response.data as AgenticProfile;
+        profile = await fetchAgenticProfile( canonicalUri );
     }
     verifyPublicKey( profile, publicKey, agentUrl );
 
@@ -85,14 +83,16 @@ export async function handleLogin( signedChallenge: SignedChallenge, store: Agen
 }
 
 function verifyPublicKey( profile: AgenticProfile, publicKey: string, agentUrl?: string ) {
-    const agent = profile.agents?.find(e=>e.url === agentUrl);
-    if( agent && agent.keyring )
+    if( agentUrl ) {
+        const agent = profile.agents?.find(e=>e.url === agentUrl);
+        if( !agent )
+            throw new Error( "Failed to find agent matching agentUrl" );
         ensureKeyInRing( publicKey, agent.keyring );
-    else
+    } else
         ensureKeyInRing( publicKey, profile.keyring );
 }
 
-function ensureKeyInRing( publicKey: string, keyring: AgentKey[] ) {
+function ensureKeyInRing( publicKey: string, keyring?: AgentKey[] ) {
     const hasKey = keyring?.some(e=>e.publicKey === publicKey);
     if( !hasKey )
         throw new Error("Public key not found in agentic profile keyrings"); 
@@ -107,7 +107,12 @@ export async function handleAuthorization( authorization: string, store: AgentAu
     if( tokens.length < 2 )
         throw new Error( "Missing Agentic token" );
 
-    const { id, sessionKey } = base64toObject<AgentToken>(tokens[1]);
+    let id, sessionKey;
+    try {
+        ({ id, sessionKey } = base64toObject<AgentToken>(tokens[1]));
+    } catch( err: any ) {
+        throw new Error('Failed to parse agentic token. ' + err.message + " token: " + tokens[1] );
+    }
     if( !sessionKey ) {
         console.log( "ERROR, agent token:", authorization );
         throw new Error( "Agent token invalid format" );
