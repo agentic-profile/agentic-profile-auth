@@ -9,7 +9,7 @@ When the person (or an agent (A) of that person) attempts to communicate with an
 The Agentic Profile supports a protocol that is:
 - Open source
 - Light weight (easy to implement)
-- Very secure using strong public key crypography (ed25519 by default)
+- Very secure using strong public key cryptography (ed25519 by default)
 - Decentralized, anyone can publish an Agentic Profile at any HTTPS endpoint
 - Fine grained/multi-tenant, allowing a single service to handle many users/agents/tenants
 - Extensible, supporting any number of agents for a single profile, and allowing the agents to communicate in any protocol they agree on
