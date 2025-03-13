@@ -18,7 +18,7 @@ import {
 } from "./models.js";
 
 
-async function createEdDsaJwk() {
+export async function createEdDsaJwk() {
     const privateKey = utils.randomPrivateKey();
 
     const b64uPrivateKey = byteArrayToBase64Url( privateKey );

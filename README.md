@@ -1,6 +1,6 @@
 # Agentic Profile Authentication Library
 
-An Agentic Profile is a JSON-LD/DID Document at a well known network location that becomes a DID URI for a person, business, or other entity.  DID URIs can resolve to an HTTPS endpoint, on a blockchain, and many other services that are definbed by the DID specification.  For example, the URI did:web:iamagentic.ai/mike is a universal identifier that can be used to discover AI agents that represent Mike.
+An Agentic Profile is a JSON-LD/DID Document at a well known network location that becomes a DID URI for a person, business, or other entity.  DID URIs can resolve to an HTTPS endpoint, on a blockchain, and many other services that are defined by the DID specification.  For example, the URI did:web:iamagentic.ai/mike is a universal identifier that can be used to discover AI agents that represent Mike.
 
 The Agentic Profile provides a means for authentication using strong public key cryptography.  Each Agentic Profile publishes the current public key(s) for a person, and may also publish the public keys for the person's agents.
 
@@ -9,7 +9,7 @@ When the person (or an agent (A) of that person) attempts to communicate with an
 The Agentic Profile supports a protocol that is:
 - Open source
 - Light weight (easy to implement)
-- Very secure using strong public key cryptography (ed25519 by default)
+- Very secure using strong public key cryptography (ed25519 by default) and the JSON Web Signature (JWS) standards
 - Decentralized, anyone can publish an Agentic Profile DID resolvable service
 - Fine grained/multi-tenant, allowing a single service to handle many users/agents/tenants
 - Extensible, supporting any number of agents for a single profile, and allowing the agents to communicate in any protocol they agree on
