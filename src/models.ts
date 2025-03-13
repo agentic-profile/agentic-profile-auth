@@ -101,14 +101,6 @@ export interface Persona {
     meta: PersonaMeta
 }
 
-/*
-export interface VerificationMethod {
-    id: FragmentID,
-    type: "JsonWebKey2020",
-    publicKeyJwk: EdDSAPublicJWK
-}
-*/
-
 export interface AgenticProfile extends DIDDocument {
     name: string      // nickname, not globally unique
 }

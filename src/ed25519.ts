@@ -39,7 +39,7 @@ export async function createEdDsaJwk() {
     return { publicJwk, b64uPublicKey, privateJwk, b64uPrivateKey };
 }
 
-async function sign( message:string, base64UrlPrivateKey:string ) {
+export async function sign( message:string, base64UrlPrivateKey:string ) {
     ensure( message, "Ed25519 sign() requires a message" );
     ensure( base64UrlPrivateKey, "Ed25519 sign() requires a private key" );
     try {
@@ -51,7 +51,7 @@ async function sign( message:string, base64UrlPrivateKey:string ) {
     }
 }
 
-async function verify( base64UrlSignature:string, message:string, base64UrlPublicKey:string ) {
+export async function verify( base64UrlSignature:string, message:string, base64UrlPublicKey:string ) {
     ensure( base64UrlPublicKey, "Ed25519 verify() requires a public key" );
     ensure( base64UrlSignature, "Ed25519 verify() requires a signature" );
     ensure( message, "Ed25519 verify() requires a message" );
@@ -62,10 +62,4 @@ async function verify( base64UrlSignature:string, message:string, base64UrlPubli
     } catch( err: any ) {
         throw new Error("Ed25519 verify() failed: " + err.message );
     }
-}
-
-export {
-    createEdDsaJwk,
-    sign,
-    verify,
 }
