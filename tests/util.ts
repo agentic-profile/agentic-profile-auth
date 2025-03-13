@@ -8,14 +8,18 @@ export function mutateBase64(base64:string) {
     return base64.substring(0, p) + replacement + base64.substring(p + 1);
 }
 
-export const BASE_64_REGEX = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}|[A-Za-z0-9+/]{3})?$/;
+export const BASE64URL_REGEX = /^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}|[A-Za-z0-9_-]{3})?$/;
 
-export function isBase64key( base64: string ) {
+export function isBase64Key( base64url: string, length: number = 43 ) {
     // e.g. GY3f8Qqyf6K+Oc/XeXVf64h67PMge5s6nM/6bavNHX8
-    if( !base64 || base64.length !== 43 )
+    if( typeof base64url !== 'string' || base64url.length !== length )
         return false;
     else
-        return BASE_64_REGEX.test( base64 );
+        return BASE64URL_REGEX.test( base64url );
+}
+
+export function isBase64Url( base64url: string ) {
+    return BASE64URL_REGEX.test( base64url );
 }
 
 const sessionMap = new Map<number,ClientAgentSession>();
@@ -46,3 +50,7 @@ export const authStore = {
         challengeMap.delete( id );
     }
 } as AgentAuthStore;
+
+export function prettyJSON( obj: any ) {
+    return JSON.stringify( obj, null, 4 );
+}

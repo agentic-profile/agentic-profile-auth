@@ -1,9 +1,14 @@
-import axios from "axios";
 import {
-    AgenticProfile,
-    CanonicalURI,
-    ProfileURI
+    VerificationMethod 
+} from "did-resolver";
+
+import {
+    FragmentID
 } from "./models.js";
+
+//
+// General
+//
 
 export function createTimer(name:string) {
     let start = Date.now();
@@ -18,23 +23,37 @@ export function createTimer(name:string) {
     };
 }
 
-export function objectToBase64<T>(obj:T) {
-    const json = JSON.stringify(obj);
-    return clean64( btoa( json ) );
+export function ensure( truth: any, ...props:any[] ) {
+    if( !truth )
+        throw new Error( props.join(' ') );
 }
 
-export function base64toObject<T>(s:string) {
-    const json = atob( s );
+export function isObject( variable: any ) {
+    return typeof variable === 'object' && variable !== null;
+}
+
+
+//
+// Object, base64url, and byte array conversions
+//
+
+export function objectToBase64Url<T>(obj:T) {
+    const json = JSON.stringify(obj);
+    return stringToBase64Url( json );
+}
+
+export function base64UrlToObject<T>( base64url: string ) {
+    const json = base64UrltoString( base64url );
     return JSON.parse( json ) as T;
 }
 
-export function byteArrayToBase64(uint8Array: Uint8Array) {
-    const base64 = btoa(String.fromCharCode(...uint8Array));
-    return clean64( base64 );
+export function byteArrayToBase64Url(uint8Array: Uint8Array) {
+    const s = String.fromCharCode(...uint8Array);
+    return stringToBase64Url( s );
 }
 
-export function base64toByteArray(base64: string): Uint8Array {
-    const binaryString = atob(base64);
+export function base64UrlToByteArray(base64url: string): Uint8Array {
+    const binaryString = base64UrltoString( base64url );
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
@@ -43,47 +62,32 @@ export function base64toByteArray(base64: string): Uint8Array {
     return bytes;
 }
 
-export function clean64( base64: string ) {
-    return base64.replace(/=+$/, '');
+function base64UrltoString( base64url: string ) {
+    return atob( base64url.replace(/-/g, '+').replace(/_/g, '/') );
+}
+
+function stringToBase64Url( s: string ) {
+    const base64 = btoa( s );
+    return base64ToBase64Url( base64 );
+}
+
+export function base64ToBase64Url( base64: string ) {
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 export function stringToByteArray(s:string) {
     return new TextEncoder().encode(s);
 }
 
-export async function fetchAgenticProfile( profileUri: ProfileURI ) {
-    const { data } = await axios.get( profileUri );
-    return data as AgenticProfile;
-}
+//
+// DID tools
+//
 
-function isProfileUriCanonical( profileUri: ProfileURI ) {
-    const url = new URL( profileUri );
-    const lastPart = url.pathname.split('/').pop();
-    if( !lastPart )
-        throw new Error("Invalid agentic profile URI: " + profileUri );
+export function resolveFragmentId( vm: FragmentID | VerificationMethod ) {
+    if( !vm )
+        return undefined;
+    else if( typeof vm === 'string' )
+        return vm as FragmentID;
     else
-        return /^\d+$/.test( lastPart );    // all digits?  ...then canonical!
-}
-
-interface ProfileUriResolution {
-    canonicalUri: CanonicalURI,
-    aliasProfile?: AgenticProfile
-}
-
-export async function resolveCanonicalProfileUri( profileUri: ProfileURI ): Promise<ProfileUriResolution> {
-    if( isProfileUriCanonical( profileUri ) )
-        return { canonicalUri: profileUri as CanonicalURI };
-
-    // <==== EXPENSIVE: TODO fix, use cached version?
-    const { elapsed } = createTimer("resolveCanonicalProfileUri");
-    const aliasProfile = await fetchAgenticProfile( profileUri );
-    if( !aliasProfile.canonicalUri )
-        throw new Error("Agentic alias profile does not include reference to canonical URI: " + profileUri );
-
-    const canonicalUri = new URL( aliasProfile.canonicalUri, profileUri ).toString() as CanonicalURI;
-
-    // TODO, verify aliasUris back to original profileUri
-
-    elapsed( "resolved canonical profile uri", profileUri, '=>', canonicalUri );
-    return { canonicalUri, aliasProfile };
+        return vm.id as FragmentID;
 }

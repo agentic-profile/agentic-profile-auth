@@ -1,0 +1,45 @@
+{
+    "@context": [
+        "https://www.w3.org/ns/did/v1",
+        "https://w3id.org/security/suites/jws-2020/v1",
+        "https://iamagentic.org/ns/agentic-profile/v1"
+    ],
+    "id": "did:web:localhost%3A3003:iam:7",
+    "name": "Dave",
+    "verificationMethod": [
+        {
+            "id": "did:web:localhost%3A3003:iam:7#vm-local",
+            "type": "JsonWebKey2020",
+            "publicKeyJwk": {
+                "kty": "OKP",
+                "alg": "EdDSA",
+                "crv": "Ed25519",
+                "x": "2wtvfyhN-u4tfL4HinuCx6FHaWimGMADJMam89SfJjQ"
+            }
+        },
+        {
+            "id": "did:web:localhost%3A3003:iam:7#vm-jose",
+            "type": "JsonWebKey2020",
+            "publicKeyJwk": {
+                "crv": "Ed25519",
+                "x": "mpHKo1noq1HNrcg13bY67hl90EuYarWGCWF4eH2nLo4",
+                "kty": "OKP",
+                "alg": "EdDSA",
+                "key_ops": [
+                    "verify"
+                ],
+                "use": "sig"
+            }
+        }
+    ],
+    "service": [
+        {
+            "id": "did:web:localhost%3A3003:iam:7#agentic-chat",
+            "type": "AgenticChat",
+            "serviceEndpoint": "http://localhost:3003/v1/agent-chat",
+            "capabilityInvocation": [
+                "did:web:localhost%3A3003:iam:7#vm-jose"
+            ]
+        }
+    ]
+}

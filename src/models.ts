@@ -1,83 +1,89 @@
+import {
+    DIDDocument,
+    JsonWebKey,
+    Service,
+    VerificationMethod
+} from "did-resolver";
+
+export type DID = string;           // MAY include a fragment, or not 
+export type FragmentID = string;    // may be full DID, or just the fragment part, such as "#key-7"
+export type Base64Url = string;
+
+
 //
 // Auth
 //
 
-export type CanonicalURI = string;
-export type AliasURI = string;
-export type ProfileURI = CanonicalURI | AliasURI;
-
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
-    type: "agentic-challenge/1.0",
-    challenge: string,  // opaque identifier
-    login: string       // URL to POST signed challenge to, may be relative to endpoint that requested authentication
+    type: "agentic-challenge/0.2",
+    challenge: string,  // opaque 
+    login: string       // URL to POST JWS signed challenge to, may be relative to endpoint that requested authentication
+}
+
+// Body of HTTP POST /agent-login
+export interface AgenticLoginRequest {
+    jwsSignedChallenge: string,    // compact encoding, <header>.<payload>.<signature>
+}
+
+// Body of HTTP login response
+export interface AgenticLoginResponse {
+    authToken: string  // base64url of JSON of AgentToken, opaque to client, used for HTTP authorization header
+}
+
+// JSON encoding is used to wrap HTTP authorization header value after 'Agentic'
+export interface AuthToken {
+    id: number,
+    sessionKey: string
+}
+
+
+//
+// JWK
+//
+
+export interface EdDSAPublicJWK extends JsonWebKey {
+    kty: "OKP",
+    alg: "EdDSA",
+    crv: "Ed25519",
+    x: Base64Url
+}
+
+export interface EdDSAPrivateJWK extends EdDSAPublicJWK {
+    d: Base64Url
+}
+
+
+//
+// JWS
+//
+
+export interface AgenticJwsHeader {
+    alg: "EdDSA"
+}
+
+// Payload portion of JSON web signature
+export interface AgenticJwsPayload {
+    challenge: string,
+    attest: Attestation
 }
 
 export interface Attestation {
-    canonicalUri: CanonicalURI,
-    agentUrl?: string,  // optional, specific agent doing signing
+    agentDid: DID               // scopes to the agent that is being verified, MUST include DID of user idenitity
+    verificationId: FragmentID  // the verification method used to sign the JWS
 }
 
-// Body of HTTP login POST request
-export interface SignedChallenge {
-    publicKey: string,      // base64
-    challenge: string,      // opaque
-    attestation: string,    // base64(toJson(Attestation))
-    signature: string       // base64 of sign(challenge.payload)
-}
-
-// JSON encoding is used to wrap HTTP authorization value after 'Agentic'
-export interface AgentToken {
-    id: number,
-    sessionKey: string
-}
-
-export interface LoginResult {
-    agentToken: string  // base 64 of JSON from AgentToken
-}
 
 //
-// Session
+// Agentic Profile (Overlays DID document)
 //
 
-// On the remote/server side, session tracks client that is communicating with them... canonicalUri+optional agentUrl
-export interface ClientAgentSession {
-    id: number,
-    created: Date,
-    canonicalUri: CanonicalURI, // uri of user/agent about/profile
-    agentUrl?: string,          // optional agentUrl when client agent keyring used
-    sessionKey: string
-}
-
-// on client side, session/agent token for communicating with remote/server agentUrl
-export interface RemoteAgentSession {
-    uid: number,            // implicit client canonicalUri
-    created: Date,
-    remoteAgentUrl: string, // endpoint we are communicating with
-    agentToken: string      // opaque token (actually base64 JSON of {id,sessionKey})
-}
-
-//
-// Agentic Profile
-//
-
-export interface Keypair {
-    type: "ed25519",
-    publicKey: string,                  // base64
-    privateKey: string | undefined,     // base64   
-}
-
-export interface AgentKey extends Keypair {
-    name?: string,
-    created?: Date,
-    expires: Date,
-}
-
-export interface AgentService {
-    type: string,   // e.g. "chat",
-    url: string,    // e.g. `https://agents.matchwise.ai/agents/${uid}/chat`,
-    name: string,
-    keyring?: AgentKey[]
+export interface AgentService extends Service {
+    // id: string,
+    // type: string,               // e.g. "AgenticChat",
+    // serviceEndpoint: string,    // e.g. `https://agents.matchwise.ai/agent-chat`,
+    name: string,                  // friendly name
+    capabilityInvocation: (FragmentID | VerificationMethod)[]
 }
 
 export interface PersonaMeta {
@@ -95,21 +101,38 @@ export interface Persona {
     meta: PersonaMeta
 }
 
-export interface AgenticProfile {
-    uid: number,
-    name: string,
-    alias?: string,
-    ttl: number,    // seconds, default 1 day/86400 seconds
-    canonicalUri?: CanonicalURI,
-    aliasUris?: AliasURI[],
-    keyring: AgentKey[],
-    agents: AgentService[],
-    personas: Persona[]
+/*
+export interface VerificationMethod {
+    id: FragmentID,
+    type: "JsonWebKey2020",
+    publicKeyJwk: EdDSAPublicJWK
+}
+*/
+
+export interface AgenticProfile extends DIDDocument {
+    name: string      // nickname, not globally unique
 }
 
+
 //
-// Storage
+// Session Management
 //
+
+// On the remote/server side, session tracks client that is communicating with them... canonicalUri+optional agentUrl
+export interface ClientAgentSession {
+    id: number,
+    created: Date,
+    did: DID,           // DID - may include agent/service qualifier fragment, e.g. did:web:example.com:dave#agent-7
+    sessionKey: string
+}
+
+// on client side, session/agent token for communicating with remote/server agentUrl
+export interface RemoteAgentSession {
+    uid: number,            // implicit client did
+    created: Date,
+    remoteDid: DID,         // endpoint we are communicating with, including fragment
+    authToken: string       // opaque auth token (actually base64url of JSON of {id,sessionKey})
+}
 
 export interface ChallengeRecord {
     id: number,
@@ -117,9 +140,14 @@ export interface ChallengeRecord {
     created: Date
 }
 
+
+//
+// Storage
+//
+
 export interface AgentAuthStore {
     // Manage sessions with clients that are calling our HTTP endpoints
-    saveClientSession: ( sessionKey: string, canonicalUri: CanonicalURI, agentUrl?: string )=>Promise<number>
+    saveClientSession: ( sessionKey: string, did: DID )=>Promise<number>
     fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
 
     // For the remote agent server, to track challenges that have been issued

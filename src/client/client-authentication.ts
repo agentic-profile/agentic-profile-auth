@@ -1,36 +1,52 @@
-import { sign } from "../ed25519.js";
+import { signAsync } from "@noble/ed25519";
 
 import {
     AgenticChallenge,
+    AgenticJwsPayload,
     Attestation,
-    SignedChallenge,
-    Keypair
+    EdDSAPrivateJWK,
 } from "../models.js"
-
-import { objectToBase64 } from "../util.js";
+import {
+    byteArrayToBase64Url,
+    objectToBase64Url,
+    base64UrlToByteArray
+} from "../util.js";
 
 type Params = {
     agenticChallenge: AgenticChallenge,
-    keypair: Keypair,
+    privateJwk: EdDSAPrivateJWK,
     attestation: Attestation   
 }
 
-// This is done client/initiator side
-// challenge: opaque string, maybe <id>:<rawchallenge>, or maybe not ;)
-// attestation includes the clients canonicalUri, and optionaly the agentUrl
-// if the agentUrl is included, the publicKey MUST be present in the agents keyring!!
-export async function signChallenge({ agenticChallenge, keypair, attestation }: Params) {
-    const { publicKey, privateKey } = keypair;
-    const { challenge } = agenticChallenge;
-    if( !attestation )
-        throw new Error('Cannot sign challenge; missing attestation');
-    const base64Attestation = objectToBase64( attestation );
-    const message = challenge + '.' + base64Attestation;
-    const signature = await sign( message, privateKey! );
+export function asPayload( agenticChallenge: AgenticChallenge, attestation: Attestation ) {
     return {
-        challenge,
-        attestation: base64Attestation,
-        publicKey,
-        signature
-    } as SignedChallenge;
+        challenge: agenticChallenge.challenge,
+        attest: attestation
+    } as AgenticJwsPayload;
+}
+
+// returns the JWS string
+export async function signChallenge({ agenticChallenge, privateJwk, attestation }: Params ) {
+    const payload = asPayload( agenticChallenge, attestation );
+    const privateKey = base64UrlToByteArray( privateJwk.d );
+    return await createJWS( payload, privateKey );
+}
+
+// Function to create a JWS (JWT without encryption)
+async function createJWS( payload: any, privateKey: Uint8Array ) {
+    const header = { alg: "EdDSA" };
+
+    // Encode header & payload using base64url
+    const headerB64 = objectToBase64Url(header);
+    const payloadB64 = objectToBase64Url(payload);
+    const message = `${headerB64}.${payloadB64}`;
+
+    // Sign using Ed25519
+    const messageBytes = new TextEncoder().encode(message);
+    const signature = await signAsync(messageBytes, privateKey);
+    
+    // Encode signature in base64url format
+    const signatureB64 = byteArrayToBase64Url(signature);
+
+    return `${message}.${signatureB64}`;
 }

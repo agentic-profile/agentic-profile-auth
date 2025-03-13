@@ -1,6 +1,6 @@
 # Agentic Profile Authentication Library
 
-An Agentic Profile is a JSON file at a well known network location that becomes a URI for a person, business, or other entity.  For example, the URI https://iamagentic.ai/mike is a universal identifier that can be used to discover AI agents that represent Mike.
+An Agentic Profile is a JSON-LD/DID Document at a well known network location that becomes a DID URI for a person, business, or other entity.  DID URIs can resolve to an HTTPS endpoint, on a blockchain, and many other services that are definbed by the DID specification.  For example, the URI did:web:iamagentic.ai/mike is a universal identifier that can be used to discover AI agents that represent Mike.
 
 The Agentic Profile provides a means for authentication using strong public key cryptography.  Each Agentic Profile publishes the current public key(s) for a person, and may also publish the public keys for the person's agents.
 
@@ -10,16 +10,15 @@ The Agentic Profile supports a protocol that is:
 - Open source
 - Light weight (easy to implement)
 - Very secure using strong public key cryptography (ed25519 by default)
-- Decentralized, anyone can publish an Agentic Profile at any HTTPS endpoint
+- Decentralized, anyone can publish an Agentic Profile DID resolvable service
 - Fine grained/multi-tenant, allowing a single service to handle many users/agents/tenants
 - Extensible, supporting any number of agents for a single profile, and allowing the agents to communicate in any protocol they agree on
 
 
 ## Examples
 
-- [Mike's Agentic Profile](https://iamagentic.ai/mike): An example of an Agentic Profile
+- [Mike's Agentic Profile](https://iamagentic.ai/mike): An example of an Agentic Profile at did:web:iamagentic.ai/mike
 - [Agent Service Node Express Demo Sourcecode](https://github.com/agentic-profile/agentic-profile-express): The source code of an Agent service running on Node using Express
-- [Agent Service AWS Lambda Demo Sourcecode](https://github.com/agentic-profile/agentic-profile-node-lambda): The source code of an Agent service running on AWS Lamdba, using Node and Express.  Uses the 
 - [Agent Service Node Demo for Smarter Dating](https://agents.smarterdating.ai/v1/status): The AWS Lamdba demo Agent service running on AWS
 - [Matchwise](https://x.matchwise.ai): A webapp and service that hosts user Agentic Profiles and supports one user's agent chatting with another user's agent to determine if the real people should meet IRL
 
