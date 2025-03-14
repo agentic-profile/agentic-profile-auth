@@ -110,7 +110,7 @@ export interface AgenticProfile extends DIDDocument {
 // Session Management
 //
 
-// On the remote/server side, session tracks client that is communicating with them... canonicalUri+optional agentUrl
+// On the remote/server side, session tracks client that is communicating with them
 export interface ClientAgentSession {
     id: number,
     created: Date,

@@ -47,7 +47,7 @@ export async function createChallenge( store: AgentAuthStore ) {
     return { 
         type: "agentic-challenge/0.2",
         challenge: `${id}:${challenge}`,    // opaque
-        login: "/v1/agent-login"
+        login: "/agent-login"
     } as AgenticChallenge;
 }
 
@@ -77,7 +77,7 @@ export async function handleLogin( agenticLogin: AgenticLoginRequest, store: Age
     const expectedChallenge = challengeId + ':' + record!.challenge;
     ensure( expectedChallenge === challenge, 'Signed challenge is different than offered:', expectedChallenge, '!=', challenge );
 
-    // verify publicKey in signature is from user specified in canonical url
+    // verify publicKey in signature is from user specified in agentDid
     let profile = options?.mocks?.agenticProfile;
     if( !profile ) {
         const didResolver = options?.didResolver ?? DEFAULT_DID_RESOLVER;

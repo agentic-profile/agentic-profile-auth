@@ -13,7 +13,7 @@ export function getResolver(): Record<string, DIDResolver> {
             id.map(decodeURIComponent).join('/') + '/did.json'
             : decodeURIComponent( parsed.id ) + "/.well-known/did.json"
 
-        const url = `https://${path}`
+        const url = `${selectProtocol(path)}://${path}`
         try {
             const { data } = await axios.get(url);
             const didDocument = data as DIDDocument;
@@ -37,4 +37,8 @@ export function getResolver(): Record<string, DIDResolver> {
     }
 
     return { web: resolve }
+}
+
+function selectProtocol( path: string ) {
+    return path.startsWith("localhost") ? "http" : "https";
 }
