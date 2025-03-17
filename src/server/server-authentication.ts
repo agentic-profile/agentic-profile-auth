@@ -15,6 +15,7 @@ import {
     AgenticJwsHeader,
     AgenticJwsPayload,
     AgentService,
+    AGENTIC_CHALLENGE_TYPE,
     DID,
     FragmentID
 } from "../models.js"
@@ -25,7 +26,7 @@ import {
     ensure,
     isObject,
     objectToBase64Url,
-    resolveFragmentId
+    matchingFragmentIds
 } from "../util.js";
 import { getResolver } from "../web-did-resolver.js";
 
@@ -45,7 +46,7 @@ export async function createChallenge( store: AgentAuthStore ) {
     const challenge = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
     const id = await store.saveChallenge( challenge );
     return { 
-        type: "agentic-challenge/0.2",
+        type: AGENTIC_CHALLENGE_TYPE,
         challenge: `${id}:${challenge}`,    // opaque
         login: "/agent-login"
     } as AgenticChallenge;
@@ -140,34 +141,20 @@ export async function handleAuthorization( authorization: string, store: AgentAu
 // Utility
 //
 
+/*
 function parseFragmentId( fid: FragmentID ) {
     const tokens = fid.split('#');
     return { base: tokens[0], id: tokens.length > 1 ? tokens.pop() : undefined };
-}
-
-function matchingFids( vm1: FragmentID | VerificationMethod, fid2: FragmentID ) {
-    const fid1 = resolveFragmentId( vm1 );
-    if( !fid1 )
-        return false;
-    else if( fid1 === fid2 )
-        return true;    // simple case
-
-    const parsed1 = parseFragmentId( fid1 );
-    const parsed2 = parseFragmentId( fid2 );
-    if( !parsed1.id || !parsed2.id )
-        return false;
-    else
-        return parsed1.id === parsed2.id;
-}
+}*/
 
 function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, verificationId: FragmentID ) {
     // find agent
-    const agent = profile.service?.find(e=>matchingFids( e.id, agentDid ) ) as AgentService;
+    const agent = profile.service?.find(e=>matchingFragmentIds( e.id, agentDid ) ) as AgentService;
     if( !agent )
         throw new Error('Failed to find agent service for ' + agentDid );
 
     // does this agent have the indicated verification?
-    let methodOrId = agent.capabilityInvocation?.find(e=>matchingFids(e, verificationId));
+    let methodOrId = agent.capabilityInvocation?.find(e=>matchingFragmentIds(e, verificationId));
     ensure( methodOrId, "Verification id does not match any entries in the agents capabilityInvocation list:", verificationId );
     if( isObject( methodOrId ) ) {
         // if the verification method is scoped to the agent/service, then simply return it
@@ -177,7 +164,11 @@ function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, veri
         throw new Error("Unexpected capabilityInvocation type: " + methodOrId );
 
     // does the verification method exist in the general verificationMethod list?
-    const verificationMethod = profile.verificationMethod?.find(e=>matchingFids(e.id, verificationId ) );
+    console.log( 'searching for verification method',JSON.stringify({
+        profile,
+        verificationId
+    },null,4));
+    const verificationMethod = profile.verificationMethod?.find(e=>matchingFragmentIds(e.id, verificationId ) );
     ensure( verificationMethod, "Verification id does not match any listed verification methods:", verificationId );
 
     return verificationMethod;

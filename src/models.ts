@@ -14,10 +14,12 @@ export type Base64Url = string;
 // Auth
 //
 
+export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.2";
+
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
     type: "agentic-challenge/0.2",
-    challenge: string,  // opaque 
+    challenge: any,  // opaque string or object
     login: string       // URL to POST JWS signed challenge to, may be relative to endpoint that requested authentication
 }
 
@@ -28,10 +30,10 @@ export interface AgenticLoginRequest {
 
 // Body of HTTP login response
 export interface AgenticLoginResponse {
-    authToken: string  // base64url of JSON of AgentToken, opaque to client, used for HTTP authorization header
+    authToken: string  // base64url of JSON of AuthToken, opaque to client, used for HTTP authorization header
 }
 
-// JSON encoding is used to wrap HTTP authorization header value after 'Agentic'
+// Example of an auth token; JSON encoding is used to wrap HTTP authorization header value after 'Agentic'
 export interface AuthToken {
     id: number,
     sessionKey: string
@@ -64,13 +66,13 @@ export interface AgenticJwsHeader {
 
 // Payload portion of JSON web signature
 export interface AgenticJwsPayload {
-    challenge: string,
+    challenge: any,
     attest: Attestation
 }
 
 export interface Attestation {
     agentDid: DID               // scopes to the agent that is being verified, MUST include DID of user idenitity
-    verificationId: FragmentID  // the verification method used to sign the JWS
+    verificationId: FragmentID  // the verification method used to sign this JWS
 }
 
 
@@ -86,23 +88,9 @@ export interface AgentService extends Service {
     capabilityInvocation: (FragmentID | VerificationMethod)[]
 }
 
-export interface PersonaMeta {
-    label: string,
-    details?: string,
-    goals?: string
-}
-
-export interface Persona {
-    uid: number,
-    pid: number,
-    created: Date,
-    updated: Date,
-    hidden: boolean
-    meta: PersonaMeta
-}
-
 export interface AgenticProfile extends DIDDocument {
     name: string      // nickname, not globally unique
+    ttl?: number      // TTL in seconds, default is 86400 (one day)
 }
 
 
@@ -114,15 +102,17 @@ export interface AgenticProfile extends DIDDocument {
 export interface ClientAgentSession {
     id: number,
     created: Date,
-    did: DID,           // DID - may include agent/service qualifier fragment, e.g. did:web:example.com:dave#agent-7
+    agentDid: DID,           // SHOULD include agent/service qualifier fragment, e.g. did:web:example.com:dave#agent-7
     sessionKey: string
 }
 
 // on client side, session/agent token for communicating with remote/server agentUrl
 export interface RemoteAgentSession {
-    uid: number,            // implicit client did
+    uid: number,
+    userAgentDid: DID,
+    peerAgentDid: DID,      // agent we are communicating with, including fragment
+    peerServiceUrl: string, // HTTP(S) endpoint of service
     created: Date,
-    remoteDid: DID,         // endpoint we are communicating with, including fragment
     authToken: string       // opaque auth token (actually base64url of JSON of {id,sessionKey})
 }
 

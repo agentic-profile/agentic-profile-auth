@@ -23,6 +23,7 @@ import {
     VerificationKey
 } from "../src/models";
 import {
+    resolveDocumentPartId,
     resolveFragmentId
 } from "../src/util";
 import {
@@ -123,7 +124,7 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
                 agentService
             ]
         };
-        console.log( "agentic profile", prettyJSON( agenticProfile ) );
+        //console.log( "agentic profile", prettyJSON( agenticProfile ) );
 
         // simulate login using the JWS signed challenge
         const options = { mocks: { agenticProfile } };
@@ -152,7 +153,7 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
                 agentService
             ]
         };
-        console.log( "agentic profile with scoped service keys", prettyJSON( agenticProfile ) );
+        //console.log( "agentic profile with scoped service keys", prettyJSON( agenticProfile ) );
 
         // simulate login using the JWS signed challenge
         const options = { mocks: { agenticProfile } };
@@ -212,6 +213,8 @@ function craftAgenticProfile( id: DID ) {
 }
 
 function craftAgentService( did: DID, verificationMethod: FragmentID | VerificationMethod ) {
+    //console.log('craftAgenticService',did,verificationMethod);
+
     const agentService = {
         id: did + "#agentic-chat",
         type: "AgenticChat",
@@ -221,7 +224,7 @@ function craftAgentService( did: DID, verificationMethod: FragmentID | Verificat
         ]
     };
 
-    const verificationId = resolveFragmentId( verificationMethod );
+    const verificationId = resolveDocumentPartId( verificationMethod );
 
     const attestation = {
         agentDid: agentService.id,
