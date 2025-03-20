@@ -2,43 +2,37 @@
     "@context": [
         "https://www.w3.org/ns/did/v1",
         "https://w3id.org/security/suites/jws-2020/v1",
-        "https://iamagentic.org/ns/agentic-profile/v1"
+        "https://agenticprofile.org/ns/agentic-profile/v1"
     ],
-    "id": "did:web:localhost%3A3003:iam:7",
-    "name": "Dave",
+    "id": "did:web:iamagentic.ai:30",
+    "name": "Mike Prince",
+    "media": {
+        "images": [
+            "96x96",
+            "512x512"
+        ]
+    },
+    "personas": [],
     "verificationMethod": [
         {
-            "id": "did:web:localhost%3A3003:iam:7#vm-local",
+            "id": "#agent-key",
             "type": "JsonWebKey2020",
             "publicKeyJwk": {
-                "kty": "OKP",
+                "x": "NSzduQLH2xw3T0MRcALQ0IUP07AELRpscfySVB9naqI",
                 "alg": "EdDSA",
                 "crv": "Ed25519",
-                "x": "2wtvfyhN-u4tfL4HinuCx6FHaWimGMADJMam89SfJjQ"
-            }
-        },
-        {
-            "id": "did:web:localhost%3A3003:iam:7#vm-jose",
-            "type": "JsonWebKey2020",
-            "publicKeyJwk": {
-                "crv": "Ed25519",
-                "x": "mpHKo1noq1HNrcg13bY67hl90EuYarWGCWF4eH2nLo4",
-                "kty": "OKP",
-                "alg": "EdDSA",
-                "key_ops": [
-                    "verify"
-                ],
-                "use": "sig"
+                "kty": "OKP"
             }
         }
     ],
     "service": [
         {
-            "id": "did:web:localhost%3A3003:iam:7#agentic-chat",
-            "type": "AgenticChat",
-            "serviceEndpoint": "http://localhost:3003/v1/agent-chat",
+            "id": "#agent-chat",
+            "name": "chatbot",
+            "type": "chat",
+            "serviceEndpoint": "https://agents.matchwise.ai/users/30/agent-chats",
             "capabilityInvocation": [
-                "did:web:localhost%3A3003:iam:7#vm-jose"
+                "#agent-key"
             ]
         }
     ]

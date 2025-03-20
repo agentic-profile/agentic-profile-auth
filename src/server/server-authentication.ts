@@ -1,23 +1,24 @@
 import crypto from "crypto";
 import {
-    Resolver,
+    agentHooks,
+    AgentService,
+    AgenticProfile,
+    CommonHooks,
+    DID,
+    FragmentID,
     VerificationMethod
-} from "did-resolver";
+} from "@agentic-profile/common";
 
 import { verify } from "../ed25519.js";
 
 import {
-    AgentAuthStore,
+    AgentAuthStorage,
     AuthToken,
     AgenticChallenge,
     AgenticLoginRequest,
-    AgenticProfile,
     AgenticJwsHeader,
     AgenticJwsPayload,
-    AgentService,
     AGENTIC_CHALLENGE_TYPE,
-    DID,
-    FragmentID
 } from "../models.js"
 
 import {
@@ -28,10 +29,7 @@ import {
     objectToBase64Url,
     matchingFragmentIds
 } from "../util.js";
-import { getResolver } from "../web-did-resolver.js";
 
-const webResolver = getResolver();
-const DEFAULT_DID_RESOLVER = new Resolver( webResolver );
 
 export interface LoginMocks {
     agenticProfile?: AgenticProfile
@@ -39,10 +37,9 @@ export interface LoginMocks {
 
 export interface LoginOptions {
     mocks?: LoginMocks,
-    didResolver?: Resolver
 }
 
-export async function createChallenge( store: AgentAuthStore ) {
+export async function createChallenge( store: AgentAuthStorage ) {
     const challenge = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
     const id = await store.saveChallenge( challenge );
     return { 
@@ -60,7 +57,7 @@ function unpackCompactJws( jws: string ) {
     return { header, payload, signatureB64u };
 }
 
-export async function handleLogin( agenticLogin: AgenticLoginRequest, store: AgentAuthStore, options?: LoginOptions ) {
+export async function handleLogin( agenticLogin: AgenticLoginRequest, store: AgentAuthStorage, options?: LoginOptions ) {
     const { jwsSignedChallenge } = agenticLogin;
     ensure( jwsSignedChallenge, "Missing Java Web signature property 'jwsSignedChallenge'");
     const { header, payload } = unpackCompactJws( jwsSignedChallenge );
@@ -81,8 +78,8 @@ export async function handleLogin( agenticLogin: AgenticLoginRequest, store: Age
     // verify publicKey in signature is from user specified in agentDid
     let profile = options?.mocks?.agenticProfile;
     if( !profile ) {
-        const didResolver = options?.didResolver ?? DEFAULT_DID_RESOLVER;
-        const { didDocument, didResolutionMetadata } = await didResolver.resolve( agentDid );
+        //const didResolver = options?.didResolver ?? DEFAULT_DID_RESOLVER;
+        const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( agentDid );
         const { error, message } = didResolutionMetadata;
         ensure( !error, 'Failed to resolve agentic profile from DID', error, message );
 
@@ -116,7 +113,7 @@ export async function handleLogin( agenticLogin: AgenticLoginRequest, store: Age
 
 // authorization: "Agent <JSON encoded token>"
 // JSON encoded token: { id: number, sessionKey: string }
-export async function handleAuthorization( authorization: string, store: AgentAuthStore ) {
+export async function handleAuthorization( authorization: string, store: AgentAuthStorage ) {
     const tokens = authorization.split(/\s+/);
     ensure( tokens[0].toLowerCase() === "agentic", "Unsupported authorization type: ", tokens[0] );
     ensure( tokens.length >= 2, "Missing Agentic token" );

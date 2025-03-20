@@ -1,12 +1,9 @@
 import {
-    DIDDocument,
-    JsonWebKey,
-    Service,
-    VerificationMethod
-} from "did-resolver";
+    CommonStorage,
+    DID,
+    FragmentID
+} from "@agentic-profile/common";
 
-export type DID = string;           // MAY include a fragment, or not 
-export type FragmentID = string;    // may be full DID, or just the fragment part, such as "#key-7"
 export type Base64Url = string;
 
 
@@ -75,25 +72,6 @@ export interface Attestation {
     verificationId: FragmentID  // the verification method used to sign this JWS
 }
 
-
-//
-// Agentic Profile (Overlays DID document)
-//
-
-export interface AgentService extends Service {
-    // id: string,
-    // type: string,               // e.g. "AgenticChat",
-    // serviceEndpoint: string,    // e.g. `https://agents.matchwise.ai/agent-chat`,
-    name: string,                  // friendly name
-    capabilityInvocation: (FragmentID | VerificationMethod)[]
-}
-
-export interface AgenticProfile extends DIDDocument {
-    name: string      // nickname, not globally unique
-    ttl?: number      // TTL in seconds, default is 86400 (one day)
-}
-
-
 //
 // Session Management
 //
@@ -127,7 +105,7 @@ export interface ChallengeRecord {
 // Storage
 //
 
-export interface AgentAuthStore {
+export interface AgentAuthStorage extends CommonStorage {
     // Manage sessions with clients that are calling our HTTP endpoints
     saveClientSession: ( sessionKey: string, did: DID )=>Promise<number>
     fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
