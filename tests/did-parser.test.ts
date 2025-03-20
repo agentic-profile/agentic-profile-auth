@@ -1,7 +1,5 @@
-import { 
-    parseDID,
-    webDidToUrl
-} from "@agentic-profile/common";
+import { webDidToUrl } from "@agentic-profile/common";
+import { parse } from "did-resolver";
 
 describe("Web DID to URL", () => {
     test('basic conversions', async () => {
@@ -26,5 +24,5 @@ describe("Web DID to URL", () => {
 
 function check( url: string, expected: string ) {
     expect( webDidToUrl( url ) ).toBe( expected );
-    expect( webDidToUrl( url, parseDID( url ) ) ).toBe( expected );
+    expect( webDidToUrl( url, parse( url ) ) ).toBe( expected );
 }

@@ -6,8 +6,9 @@ import {
     CommonHooks,
     DID,
     FragmentID,
-    VerificationMethod
+
 } from "@agentic-profile/common";
+import { VerificationMethod } from "did-resolver";
 
 import { verify } from "../ed25519.js";
 

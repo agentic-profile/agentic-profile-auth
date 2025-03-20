@@ -1,9 +1,9 @@
+import { FragmentID } from "@agentic-profile/common";
 import {
-    FragmentID,
-    parseDID,
+    parse,
     ParsedDID,
     VerificationMethod
-} from "@agentic-profile/common";
+} from "did-resolver";
 
 //
 // General
@@ -120,7 +120,7 @@ export function resolveFragmentId( didOrFid: string ) {
     if( didOrFid.startsWith('#') )
         return { did: null, fragment: didOrFid.slice(1) };
     else
-        return parseDID( didOrFid ) as ParsedDID;
+        return parse( didOrFid ) as ParsedDID;
 }
 
 export function matchingFragmentIds( partOrId: DocumentPartOrFragmentID, fid2: FragmentID ) {
