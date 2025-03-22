@@ -5,20 +5,20 @@ import {
     AgenticProfile,
     CommonHooks,
     DID,
-    FragmentID,
-
+    FragmentID
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
 
 import { verify } from "../ed25519.js";
 
 import {
-    ClientAgentSessionStorage,
     AgenticChallenge,
     AgenticJwsHeader,
     AgenticJwsPayload,
     AGENTIC_CHALLENGE_TYPE,
-    ClientAgentSession
+    ClientAgentSession,
+    ClientAgentSessionStorage,
+    ClientAgentSessionUpdates
 } from "../models.js"
 
 import {
@@ -32,7 +32,7 @@ import {
 
 export async function createChallenge( store: ClientAgentSessionStorage ) {
     const random = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
-    const id = await store.createClientSession( random );
+    const id = await store.createClientAgentSession( random );
     return { 
         type: AGENTIC_CHALLENGE_TYPE,
         challenge: { id, random }
@@ -64,7 +64,7 @@ export async function handleAuthorization( authorization: string, store: ClientA
 
     const challengeId = payload?.challenge?.id;
     ensure( challengeId, "Agent token missing payload.challenge.id", payload );
-    const session = await store.fetchClientSession( challengeId );
+    const session = await store.fetchClientAgentSession( challengeId );
     ensure( session, "Failed to find agent session", challengeId );
 
     if( !session!.authToken ) {
@@ -115,8 +115,8 @@ async function validateAuthToken( authToken: string, session: ClientAgentSession
     const isValid = await verify( b64uSignature!, message, b64uPublicKey! );
     ensure( isValid, "Invalid signed challenge and attestation", authToken, b64uPublicKey );
 
-    const sessionUpdates = { agentDid, authToken };
-    await store.updateClientSession( challenge.id, sessionUpdates );
+    const sessionUpdates = { agentDid, authToken } as ClientAgentSessionUpdates;
+    await store.updateClientAgentSession( challenge.id, sessionUpdates );
 
     return { ...session, ...sessionUpdates } as ClientAgentSession;
 }

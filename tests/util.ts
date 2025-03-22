@@ -26,16 +26,16 @@ const sessionMap = new Map<number,ClientAgentSession>();
 let nextSessionId = 1;
 
 export const authStore = {
-    createClientSession: async (challenge:string)=>{
+    createClientAgentSession: async (challenge:string)=>{
         const id = nextSessionId++;
         const session = { id, challenge, created: new Date() } as ClientAgentSession;
         sessionMap.set( id, session );
         return id;
     },
-    fetchClientSession: async (id:number)=>{
+    fetchClientAgentSession: async (id:number)=>{
         return sessionMap.get( id );  
     },
-    updateClientSession: async ( id:number, updates:any )=>{
+    updateClientAgentSession: async ( id:number, updates:ClientAgentSessionUpdates )=>{
         const session = sessionMap.get( id );
         if( !session )
             throw new Error("Failed to find client session by id: " + id );

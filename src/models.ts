@@ -83,8 +83,13 @@ export interface RemoteAgentSession {
 // Storage
 //
 
+export interface ClientAgentSessionUpdates {
+    agentDid?: DID,
+    authToken?: string
+}
+
 export interface ClientAgentSessionStorage extends CommonStorage {
-    createClientSession: ( challenge:string )=>Promise<number>
-    fetchClientSession: ( id:number )=>Promise<ClientAgentSession | undefined> 
-    updateClientSession: ( id:number, updates:any )=>Promise<number>
+    createClientAgentSession: ( challenge:string )=>Promise<number>,
+    fetchClientAgentSession: ( id:number )=>Promise<ClientAgentSession | undefined>,
+    updateClientAgentSession: ( id:number, updates:ClientAgentSessionUpdates )=>Promise<void>
 }
