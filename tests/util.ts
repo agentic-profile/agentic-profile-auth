@@ -24,31 +24,26 @@ export function isBase64Url( base64url: string ) {
 
 const sessionMap = new Map<number,ClientAgentSession>();
 let nextSessionId = 1;
-const challengeMap = new Map<number,ChallengeRecord>();
-let nextChallengeId = 1;
 
 export const authStore = {
-    saveClientSession: async ( sessionKey: string, profileUri:string, agentUrl:string )=>{
+    createClientSession: async (challenge:string)=>{
         const id = nextSessionId++;
-        const session = { id, sessionKey, profileUri, agentUrl, created: new Date() } as ClientAgentSession;
+        const session = { id, challenge, created: new Date() } as ClientAgentSession;
         sessionMap.set( id, session );
         return id;
     },
     fetchClientSession: async (id:number)=>{
         return sessionMap.get( id );  
     },
-    saveChallenge: async (challenge:string)=>{
-        const id = nextChallengeId++;
-        const entry = { id, challenge, created: new Date() } as ChallengeRecord;
-        challengeMap.set( id, entry );
-        return id;
+    updateClientSession: async ( id:number, updates:any )=>{
+        const session = sessionMap.get( id );
+        if( !session )
+            throw new Error("Failed to find client session by id: " + id );
+        else
+            sessionMap.set( id, { ...session, ...updates } );
     },
-    fetchChallenge: async (id:number)=>{
-        return challengeMap.get( id );
-    },
-    deleteChallenge: async (id:number)=>{
-        challengeMap.delete( id );
-    }
+
+
 } as AgentAuthStore;
 
 export function prettyJSON( obj: any ) {

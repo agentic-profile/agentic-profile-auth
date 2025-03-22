@@ -8,32 +8,15 @@ export type Base64Url = string;
 
 
 //
-// Auth
+// Challenge when no Authorization token provided, or it is invalid
 //
 
-export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.2";
+export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.3";
 
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
-    type: "agentic-challenge/0.2",
+    type: "agentic-challenge/0.3",
     challenge: any,  // opaque string or object
-    login: string       // URL to POST JWS signed challenge to, may be relative to endpoint that requested authentication
-}
-
-// Body of HTTP POST /agent-login
-export interface AgenticLoginRequest {
-    jwsSignedChallenge: string,    // compact encoding, <header>.<payload>.<signature>
-}
-
-// Body of HTTP login response
-export interface AgenticLoginResponse {
-    authToken: string  // base64url of JSON of AuthToken, opaque to client, used for HTTP authorization header
-}
-
-// Example of an auth token; JSON encoding is used to wrap HTTP authorization header value after 'Agentic'
-export interface AuthToken {
-    id: number,
-    sessionKey: string
 }
 
 
@@ -68,7 +51,7 @@ export interface AgenticJwsPayload {
 }
 
 export interface Attestation {
-    agentDid: DID               // scopes to the agent that is being verified, MUST include DID of user idenitity
+    agentDid: DID               // scopes to the (client) agent that is being verified, MUST include DID of user idenitity
     verificationId: FragmentID  // the verification method used to sign this JWS
 }
 
@@ -76,12 +59,13 @@ export interface Attestation {
 // Session Management
 //
 
-// On the remote/server side, session tracks client that is communicating with them
+// On the remote/server side, session tracks client/agent that is communicating with them
 export interface ClientAgentSession {
     id: number,
     created: Date,
+    challenge: string,
     agentDid: DID,           // SHOULD include agent/service qualifier fragment, e.g. did:web:example.com:dave#agent-7
-    sessionKey: string
+    authToken: string        // JWT presented by client as HTTPS "Authorization: Agentic <authToken>"
 }
 
 // on client side, session/agent token for communicating with remote/server agentUrl
@@ -91,13 +75,7 @@ export interface RemoteAgentSession {
     peerAgentDid: DID,      // agent we are communicating with, including fragment
     peerServiceUrl: string, // HTTP(S) endpoint of service
     created: Date,
-    authToken: string       // opaque auth token (actually base64url of JSON of {id,sessionKey})
-}
-
-export interface ChallengeRecord {
-    id: number,
-    challenge: string,
-    created: Date
+    authToken: string       // auth token to use for HTTPS "Authorization: Agentic <authToken>"
 }
 
 
@@ -105,13 +83,8 @@ export interface ChallengeRecord {
 // Storage
 //
 
-export interface AgentAuthStorage extends CommonStorage {
-    // Manage sessions with clients that are calling our HTTP endpoints
-    saveClientSession: ( sessionKey: string, did: DID )=>Promise<number>
-    fetchClientSession: (id:number)=>Promise<ClientAgentSession | undefined> 
-
-    // For the remote agent server, to track challenges that have been issued
-    saveChallenge: (challenge:string)=>Promise<number>
-    fetchChallenge: (id:number)=>Promise<ChallengeRecord | undefined>
-    deleteChallenge: (id:number)=>void
+export interface ClientAgentSessionStorage extends CommonStorage {
+    createClientSession: ( challenge:string )=>Promise<number>
+    fetchClientSession: ( id:number )=>Promise<ClientAgentSession | undefined> 
+    updateClientSession: ( id:number, updates:any )=>Promise<number>
 }

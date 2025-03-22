@@ -26,7 +26,7 @@ export function asPayload( agenticChallenge: AgenticChallenge, attestation: Atte
 }
 
 // returns the JWS string
-export async function signChallenge({ agenticChallenge, privateJwk, attestation }: Params ) {
+export async function signChallenge({ agenticChallenge, attestation, privateJwk }: Params ) {
     const payload = asPayload( agenticChallenge, attestation );
     const privateKey = base64UrlToByteArray( privateJwk.d );
     return await createJWS( payload, privateKey );

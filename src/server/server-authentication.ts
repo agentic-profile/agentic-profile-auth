@@ -13,13 +13,12 @@ import { VerificationMethod } from "did-resolver";
 import { verify } from "../ed25519.js";
 
 import {
-    AgentAuthStorage,
-    AuthToken,
+    ClientAgentSessionStorage,
     AgenticChallenge,
-    AgenticLoginRequest,
     AgenticJwsHeader,
     AgenticJwsPayload,
     AGENTIC_CHALLENGE_TYPE,
+    ClientAgentSession
 } from "../models.js"
 
 import {
@@ -27,123 +26,105 @@ import {
     base64ToBase64Url,
     ensure,
     isObject,
-    objectToBase64Url,
     matchingFragmentIds
 } from "../util.js";
 
 
-export interface LoginMocks {
-    agenticProfile?: AgenticProfile
-}
-
-export interface LoginOptions {
-    mocks?: LoginMocks,
-}
-
-export async function createChallenge( store: AgentAuthStorage ) {
-    const challenge = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
-    const id = await store.saveChallenge( challenge );
+export async function createChallenge( store: ClientAgentSessionStorage ) {
+    const random = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
+    const id = await store.createClientSession( random );
     return { 
         type: AGENTIC_CHALLENGE_TYPE,
-        challenge: `${id}:${challenge}`,    // opaque
-        login: "/agent-login"
+        challenge: { id, random }
     } as AgenticChallenge;
 }
 
 function unpackCompactJws( jws: string ) {
-    const [ headerB64u, payloadB64u, signatureB64u ] = jws.split('.');
-    const header = base64UrlToObject<AgenticJwsHeader>( headerB64u );
-    const payload = base64UrlToObject<AgenticJwsPayload>( payloadB64u );
+    const [ b64uHeader, b64uPayload, b64uSignature ] = jws.split('.');
+    const header = base64UrlToObject<AgenticJwsHeader>( b64uHeader );
+    const payload = base64UrlToObject<AgenticJwsPayload>( b64uPayload );
 
-    return { header, payload, signatureB64u };
+    return { header, payload, b64uSignature };
 }
 
-export async function handleLogin( agenticLogin: AgenticLoginRequest, store: AgentAuthStorage, options?: LoginOptions ) {
-    const { jwsSignedChallenge } = agenticLogin;
-    ensure( jwsSignedChallenge, "Missing Java Web signature property 'jwsSignedChallenge'");
-    const { header, payload } = unpackCompactJws( jwsSignedChallenge );
+// authorization: "Agent <JSON encoded auth token>"
+// JSON encoded token: { id: number, sessionKey: string }
+export async function handleAuthorization( authorization: string, store: ClientAgentSessionStorage ): Promise<ClientAgentSession> {
+    const tokens = authorization.trim().split(/\s+/);
+    ensure( tokens[0].toLowerCase() === "agentic", "Unsupported authorization type: ", tokens[0] );
+    ensure( tokens.length >= 2, "Missing Agentic authorization token" );
+    const authToken = tokens[1];
+
+    let payload;
+    try {
+        ({ payload } = unpackCompactJws( authToken ));
+    } catch( err: any ) {
+        throw new Error('Failed to parse agentic token. ' + err.message + " token: " + authToken );
+    }
+
+    const challengeId = payload?.challenge?.id;
+    ensure( challengeId, "Agent token missing payload.challenge.id", payload );
+    const session = await store.fetchClientSession( challengeId );
+    ensure( session, "Failed to find agent session", challengeId );
+
+    if( !session!.authToken ) {
+        // session not started yet, so validate auth token
+        return validateAuthToken( authToken, session!, store );  
+    }
+
+    if( session!.authToken !== authToken )
+        throw new Error("Incorrect authorization token; Does not match one used for validation");
+    else
+        return session!;
+}
+
+async function validateAuthToken( authToken: string, session: ClientAgentSession, store: ClientAgentSessionStorage ): Promise<ClientAgentSession> {
+    const { header, payload } = unpackCompactJws( authToken );
     ensure( header?.alg === 'EdDSA', 'Only EdDSA JWS is currently supported' );
-    const { challenge, attest: attestation } = payload;
+    const { challenge, attest } = payload;
     ensure( challenge, "Missing 'challenge' from agentic JWS payload" );
-    ensure( attestation, "Missing 'attest' from agentic JWS payload");
-    const { agentDid, verificationId } = attestation;
+    ensure( attest, "Missing 'attest' from agentic JWS payload");
+    const { agentDid, verificationId } = attest;
     ensure( agentDid, "Missing 'attest.agentDid' from agentic JWS payload");
     ensure( verificationId, "Missing 'attest.verificationId' from agentic JWS payload");
 
-    const challengeId = parseInt( challenge.split(":")[0] );
-    const record = await store.fetchChallenge( challengeId );
-    ensure( record,'Invalid or expired challenge:', challenge );
-    const expectedChallenge = challengeId + ':' + record!.challenge;
-    ensure( expectedChallenge === challenge, 'Signed challenge is different than offered:', expectedChallenge, '!=', challenge );
+    const expectedChallenge = session!.challenge;
+    const signedChallenge = challenge.random;
+    ensure( expectedChallenge === signedChallenge, 'Signed challenge is different than expected:', signedChallenge, '!=', expectedChallenge );
 
     // verify publicKey in signature is from user specified in agentDid
-    let profile = options?.mocks?.agenticProfile;
-    if( !profile ) {
-        //const didResolver = options?.didResolver ?? DEFAULT_DID_RESOLVER;
-        const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( agentDid );
-        const { error, message } = didResolutionMetadata;
-        ensure( !error, 'Failed to resolve agentic profile from DID', error, message );
+    const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( agentDid );
+    const { error } = didResolutionMetadata;
+    ensure( !error, 'Failed to resolve agentic profile from DID', error );
+    ensure( didDocument, "DID resolver failed to return agentic profile" );
 
-        profile = didDocument as AgenticProfile;
-    }
+    const profile = didDocument as AgenticProfile;
 
     const verificationMethod = resolveVerificationMethod( profile!, agentDid, verificationId );
     ensure( verificationMethod?.type === 'JsonWebKey2020','Unsupported verification type, please use JsonWebKey2020 for agents');
     const { publicKeyJwk } = verificationMethod!;
     ensure( publicKeyJwk, "Missing 'publicKeyJwk' property in verification method");
-    const { kty, alg, crv, x: publicKeyB64u } = publicKeyJwk!;
+    const { kty, alg, crv, x: b64uPublicKey } = publicKeyJwk!;
     ensure( kty === 'OKP', "JWK kty must be OKP");
     ensure( alg === 'EdDSA', "JWK alg must be EdDSA");
     ensure( crv === 'Ed25519', "JWK crv must be Ed25519");
-    ensure( publicKeyB64u, "JWK must provide 'x' as the public key");
+    ensure( b64uPublicKey, "JWK must provide 'x' as the public key");
 
-    const [ headerB64u, payloadB64u, signatureB64u ] = jwsSignedChallenge.split('.');
-    const message = headerB64u + '.' + payloadB64u;
-    const isValid = await verify( signatureB64u!, message, publicKeyB64u! );
-    ensure( isValid, "Invalid signed challenge and attestation", jwsSignedChallenge, publicKeyB64u );
+    const [ b64uHeader, b64uPayload, b64uSignature ] = authToken.split('.');
+    const message = b64uHeader + '.' + b64uPayload;
+    const isValid = await verify( b64uSignature!, message, b64uPublicKey! );
+    ensure( isValid, "Invalid signed challenge and attestation", authToken, b64uPublicKey );
 
-    const sessionKey = createBase64UrlSessionKey();
-    const id = await store.saveClientSession( sessionKey, agentDid );
-    const authToken = objectToBase64Url<AuthToken>({ id, sessionKey }); // prepare for use in HTTP authorization header
+    const sessionUpdates = { agentDid, authToken };
+    await store.updateClientSession( challenge.id, sessionUpdates );
 
-    // clean up
-    await store.deleteChallenge( challengeId );
-
-    return { authToken };  // agent token is base64url of JSON of AgentToken
-}
-
-// authorization: "Agent <JSON encoded token>"
-// JSON encoded token: { id: number, sessionKey: string }
-export async function handleAuthorization( authorization: string, store: AgentAuthStorage ) {
-    const tokens = authorization.split(/\s+/);
-    ensure( tokens[0].toLowerCase() === "agentic", "Unsupported authorization type: ", tokens[0] );
-    ensure( tokens.length >= 2, "Missing Agentic token" );
-
-    let id, sessionKey;
-    try {
-        ({ id, sessionKey } = base64UrlToObject<AuthToken>(tokens[1]));
-    } catch( err: any ) {
-        throw new Error('Failed to parse agentic token. ' + err.message + " token: " + tokens[1] );
-    }
-    ensure( sessionKey, "Agent token invalid format:", authorization );
-
-    const session = await store.fetchClientSession( id );
-    ensure( session, "Failed to find agent session", id );
-    ensure( session!.sessionKey === sessionKey, "Agent auth token session key is invalid", sessionKey );
-
-    return session!;    
+    return { ...session, ...sessionUpdates } as ClientAgentSession;
 }
 
 
 //
 // Utility
 //
-
-/*
-function parseFragmentId( fid: FragmentID ) {
-    const tokens = fid.split('#');
-    return { base: tokens[0], id: tokens.length > 1 ? tokens.pop() : undefined };
-}*/
 
 function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, verificationId: FragmentID ) {
     // find agent
@@ -170,8 +151,4 @@ function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, veri
     ensure( verificationMethod, "Verification id does not match any listed verification methods:", verificationId );
 
     return verificationMethod;
-}
-
-function createBase64UrlSessionKey(): string {
-    return base64ToBase64Url( crypto.randomBytes(32).toString("base64") );
 }

@@ -96,12 +96,6 @@ export function stringToByteArray(s:string) {
     }
 */
 
-/*
-interface DocumentPart {
-    id: string
-}
-*/
-
 export type DocumentPartOrFragmentID = VerificationMethod | FragmentID;
 
 // Some DID document lists contain a combination of ids, or document parts which contain ids.

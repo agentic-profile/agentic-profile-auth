@@ -7,6 +7,11 @@ import {
     jwtVerify
 } from "jose";
 import { VerificationMethod } from "did-resolver";
+import {
+    DID,
+    FragmentID,
+    setAgentHooks
+} from "@agentic-profile/common";
 
 import {
     createChallenge,
@@ -18,8 +23,6 @@ import {
     signChallenge,
 } from "../src/client/client-authentication";
 import {
-    DID,
-    FragmentID,
     VerificationKey
 } from "../src/models";
 import {
@@ -37,30 +40,46 @@ import {
 } from "../src/ed25519";
 
 
+// Ugh, agentHooks are outside testing scope...
+const agenticProfileMap = new Map<DID,AgenticProfile>();
+function registerProfile( profile: AgenticProfile ) {
+    agenticProfileMap.set( profile.id, profile );
+    console.log( 'registered profile', profile.id );
+}
+const didResolver = {
+    resolve: ( did: DID ) => {
+        const id = did.split('#')[0];
+
+        const didDocument = agenticProfileMap.get( id );
+        console.log( 'resolve', id, !!didDocument );
+
+        const didResolutionMetadata = didDocument ? { contentType: "application/json" }
+            : {
+                error: `Failed to resolve DID document ${id}`,
+                message: "DID does not have a document",
+            };
+
+        return {
+            didDocument,
+            didDocumentMetadata: {},
+            didResolutionMetadata
+        }
+    }
+}
+setAgentHooks({ didResolver });
+
+let nextUserId = 1;
+function nextDid() {
+    return `did:web:example.com:${nextUserId++}`;
+}
+
 describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
-
-    const did = "did:web:localhost%3A3003:iam:7"
-    let localKeys, joseKeys;
-    let localVerificationMethod, joseVerificationMethod;
-
-    beforeAll( async () => {
-        localKeys = await createEdDsaJwk();
-        localVerificationMethod = {
-            id: did + "#vm-local",
-            type: "JsonWebKey2020",
-            publicKeyJwk: localKeys.publicJwk
-        };
-
-        joseKeys = await createJoseJwk();
-        joseVerificationMethod = {
-            id: did + "#vm-jose",
-            type: "JsonWebKey2020",
-            publicKeyJwk: joseKeys.publicJwk
-        };
-    });
 
     test("compare signatures", async () => {
         const agenticChallenge = await createChallenge( authStore );
+
+        const did = nextDid();
+        const { localKeys, joseKeys } = await createKeys( did );
 
         const attestation = {
             agentDid: did + "#myagent",
@@ -106,13 +125,16 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
         // create a server style challenge sent to the client
         const agenticChallenge = await createChallenge( authStore );
 
+        const did = nextDid();
+        const { localKeys, localVerificationMethod, joseKeys } = await createKeys( did );
+
         const { agentService, attestation } = craftAgentService( did, localVerificationMethod.id );
 
         // as the client, sign the challenge
-        const jwsSignedChallenge = await signChallenge({
+        const authToken = await signChallenge({
             agenticChallenge,
-            privateJwk: localKeys.privateJwk,
-            attestation
+            attestation,
+            privateJwk: localKeys.privateJwk
         });
 
         const agenticProfile = {
@@ -124,12 +146,9 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
                 agentService
             ]
         };
-        //console.log( "agentic profile", prettyJSON( agenticProfile ) );
+        registerProfile( agenticProfile );
 
-        // simulate login using the JWS signed challenge
         const options = { mocks: { agenticProfile } };
-        const { authToken } = await handleLogin({ jwsSignedChallenge }, authStore, options );
-
         const session = await handleAuthorization( "Agentic " + authToken, authStore );
         expect( !!session ).toBe( true );
     });
@@ -138,10 +157,13 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
         // create a server style challenge sent to the client
         const agenticChallenge = await createChallenge( authStore );
 
+        const did = nextDid();
+        const { localKeys, localVerificationMethod, joseKeys } = await createKeys( did );
+
         const { agentService, attestation } = craftAgentService( did, localVerificationMethod );
 
         // as the client, sign the challenge
-        const jwsSignedChallenge = await joseSignChallenge({
+        const authToken = await joseSignChallenge({
             agenticChallenge,
             privateJwk: localKeys.privateJwk,
             attestation
@@ -153,15 +175,35 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
                 agentService
             ]
         };
-        //console.log( "agentic profile with scoped service keys", prettyJSON( agenticProfile ) );
+        registerProfile(  agenticProfile );
 
-        // simulate login using the JWS signed challenge
-        const options = { mocks: { agenticProfile } };
-        const { authToken } = await handleLogin({ jwsSignedChallenge }, authStore, options );
-
-        //const session = await handleAuthorization( "Agentic " + agentToken, authStore );
+        const session = await handleAuthorization( "Agentic " + authToken, authStore );
+        expect( !!session ).toBe( true );
     });
 });
+
+async function createKeys( did:DID ) {
+    const localKeys = await createEdDsaJwk();
+    const localVerificationMethod = {
+        id: did + "#vm-local",
+        type: "JsonWebKey2020",
+        publicKeyJwk: localKeys.publicJwk
+    };
+
+    const joseKeys = await createJoseJwk();
+    const joseVerificationMethod = {
+        id: did + "#vm-jose",
+        type: "JsonWebKey2020",
+        publicKeyJwk: joseKeys.publicJwk
+    };
+
+    return {
+        localKeys,
+        localVerificationMethod,
+        joseKeys,
+        joseVerificationMethod
+    }
+}
 
 type Params = {
     agenticChallenge: AgenticChallenge,
