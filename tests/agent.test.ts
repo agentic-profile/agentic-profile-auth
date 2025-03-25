@@ -259,7 +259,7 @@ function craftAgentService( did: DID, verificationMethod: FragmentID | Verificat
 
     const agentService = {
         id: did + "#agentic-chat",
-        type: "AgenticChat",
+        type: "Agentic/Chat",
         serviceEndpoint: "https://localhost:3003/v1/agent-chat",
         capabilityInvocation: [
             verificationMethod
