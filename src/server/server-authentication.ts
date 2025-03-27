@@ -31,11 +31,11 @@ import {
 
 
 export async function createChallenge( store: ClientAgentSessionStorage ) {
-    const random = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
-    const id = await store.createClientAgentSession( random );
+    const secret = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
+    const id = await store.createClientAgentSession( secret );
     return { 
         type: AGENTIC_CHALLENGE_TYPE,
-        challenge: { id, random }
+        challenge: { id, secret }
     } as AgenticChallenge;
 }
 
@@ -89,7 +89,7 @@ async function validateAuthToken( authToken: string, session: ClientAgentSession
     ensure( verificationId, "Missing 'attest.verificationId' from agentic JWS payload");
 
     const expectedChallenge = session!.challenge;
-    const signedChallenge = challenge.random;
+    const signedChallenge = challenge.secret;
     ensure( expectedChallenge === signedChallenge, 'Signed challenge is different than expected:', signedChallenge, '!=', expectedChallenge );
 
     // verify publicKey in signature is from user specified in agentDid
