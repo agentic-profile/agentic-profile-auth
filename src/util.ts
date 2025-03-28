@@ -24,7 +24,7 @@ export function createTimer(name:string) {
 
 export function ensure( truth: any, ...props:any[] ) {
     if( !truth )
-        throw new Error( props.join(' ') );
+        throw new Error( props.map(e=>typeof e === 'object' ? JSON.stringify(e) : ''+e).join(' ') );
 }
 
 export function isObject( variable: any ) {

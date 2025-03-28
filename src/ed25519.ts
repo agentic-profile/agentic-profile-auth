@@ -14,7 +14,8 @@ import {
 
 import {
     EdDSAPrivateJWK,
-    EdDSAPublicJWK
+    EdDSAPublicJWK,
+    JWKSet
 } from "./models.js";
 
 
@@ -36,7 +37,7 @@ export async function createEdDsaJwk() {
         d: b64uPrivateKey
     } as EdDSAPrivateJWK;
 
-    return { publicJwk, b64uPublicKey, privateJwk, b64uPrivateKey };
+    return { publicJwk, b64uPublicKey, privateJwk, b64uPrivateKey } as JWKSet;
 }
 
 export async function sign( message:string, base64UrlPrivateKey:string ) {

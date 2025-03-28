@@ -1,10 +1,10 @@
 import { signAsync } from "@noble/ed25519";
 
 import {
-    AgenticChallenge,
     AgenticJwsPayload,
     Attestation,
     EdDSAPrivateJWK,
+    OpaqueChallenge
 } from "../models.js"
 import {
     byteArrayToBase64Url,
@@ -12,24 +12,24 @@ import {
     base64UrlToByteArray
 } from "../util.js";
 
-type Params = {
-    agenticChallenge: AgenticChallenge,
-    privateJwk: EdDSAPrivateJWK,
-    attestation: Attestation   
-}
 
-export function asPayload( agenticChallenge: AgenticChallenge, attestation: Attestation ) {
+export function asPayload( challenge: OpaqueChallenge, attestation: Attestation ) {
     return {
-        challenge: agenticChallenge.challenge,
+        challenge,
         attest: attestation
     } as AgenticJwsPayload;
 }
 
-// returns the JWS string
-export async function signChallenge({ agenticChallenge, attestation, privateJwk }: Params ) {
-    const payload = asPayload( agenticChallenge, attestation );
+type Params = {
+    challenge: OpaqueChallenge,
+    privateJwk: EdDSAPrivateJWK,
+    attestation: Attestation   
+}
+
+export async function signChallenge({ challenge, attestation, privateJwk }: Params ) {
+    const payload = asPayload( challenge, attestation );
     const privateKey = base64UrlToByteArray( privateJwk.d );
-    return await createJWS( payload, privateKey );
+    return await createJWS( payload, privateKey );  // The authToken as compact JWT
 }
 
 // Function to create a JWS (JWT without encryption)

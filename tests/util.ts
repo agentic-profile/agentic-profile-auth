@@ -45,7 +45,3 @@ export const authStore = {
 
 
 } as AgentAuthStore;
-
-export function prettyJSON( obj: any ) {
-    return JSON.stringify( obj, null, 4 );
-}

@@ -5,18 +5,18 @@ import {
 } from "@agentic-profile/common";
 
 export type Base64Url = string;
-
+export type OpaqueChallenge = any;
 
 //
 // Challenge when no Authorization token provided, or it is invalid
 //
 
-export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.3";
+export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.4";
 
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
-    type: "agentic-challenge/0.3",
-    challenge: any,  // opaque string or object
+    type: "agentic-challenge/0.4",
+    challenge: OpaqueChallenge,  // opaque string or object
 }
 
 
@@ -33,6 +33,13 @@ export interface EdDSAPublicJWK extends JsonWebKey {
 
 export interface EdDSAPrivateJWK extends EdDSAPublicJWK {
     d: Base64Url
+}
+
+export interface JWKSet {
+    publicJwk: EdDSAPublicJWK
+    b64uPublicKey: Base64Url,
+    privateJwk: EdDSAPrivateJWK,
+    b64uPrivateKey: Base64Url  
 }
 
 

@@ -23,6 +23,7 @@ import {
     signChallenge,
 } from "../src/client/client-authentication";
 import {
+    OpaqueChallenge,
     VerificationKey
 } from "../src/models";
 import {
@@ -76,7 +77,7 @@ function nextDid() {
 describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
 
     test("compare signatures", async () => {
-        const agenticChallenge = await createChallenge( authStore );
+        const { challenge } = await createChallenge( authStore );
 
         const did = nextDid();
         const { localKeys, joseKeys } = await createKeys( did );
@@ -87,14 +88,14 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
         } as Attestation;
 
         const joseSignedLocal = await joseSignChallenge({
-            agenticChallenge,
+            challenge,
             privateJwk: localKeys.privateJwk,
             attestation
         });
         //console.log( "joseSignedLocal", prettyJSON( joseSignedLocal ));
 
         const localSignedLocal = await signChallenge({
-            agenticChallenge,
+            challenge,
             privateJwk: localKeys.privateJwk,
             attestation
         });
@@ -105,14 +106,14 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
         // Use Jose keys, and see if both jose and local signers agree
 
         const joseSignedJose = await joseSignChallenge({
-            agenticChallenge,
+            challenge,
             privateJwk: joseKeys.privateJwk,
             attestation
         });
         //console.log( "joseSignedJose", prettyJSON( joseSignedJose ));
 
         const localSignedJose = await signChallenge({
-            agenticChallenge,
+            challenge,
             privateJwk: joseKeys.privateJwk,
             attestation
         });
@@ -123,7 +124,7 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
 
     test("handle login with top-level verification method", async () => {
         // create a server style challenge sent to the client
-        const agenticChallenge = await createChallenge( authStore );
+        const { challenge } = await createChallenge( authStore );
 
         const did = nextDid();
         const { localKeys, localVerificationMethod, joseKeys } = await createKeys( did );
@@ -132,7 +133,7 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
 
         // as the client, sign the challenge
         const authToken = await signChallenge({
-            agenticChallenge,
+            challenge,
             attestation,
             privateJwk: localKeys.privateJwk
         });
@@ -155,7 +156,7 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
 
     test("handle login with service scoped verification method", async () => {
         // create a server style challenge sent to the client
-        const agenticChallenge = await createChallenge( authStore );
+        const { challenge } = await createChallenge( authStore );
 
         const did = nextDid();
         const { localKeys, localVerificationMethod, joseKeys } = await createKeys( did );
@@ -164,7 +165,7 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
 
         // as the client, sign the challenge
         const authToken = await joseSignChallenge({
-            agenticChallenge,
+            challenge,
             privateJwk: localKeys.privateJwk,
             attestation
         });
@@ -206,14 +207,14 @@ async function createKeys( did:DID ) {
 }
 
 type Params = {
-    agenticChallenge: AgenticChallenge,
+    challenge: OpaqueChallenge,
     privateJwk: EdDSAPrivateJWK,
     attestation: Attestation   
 }
 
 // returns the JWS string
-async function joseSignChallenge({ agenticChallenge, privateJwk, attestation }: Params ) {
-    const payload = asPayload( agenticChallenge, attestation );
+async function joseSignChallenge({ challenge, privateJwk, attestation }: Params ) {
+    const payload = asPayload( challenge, attestation );
     const payloadBytes = new TextEncoder().encode( JSON.stringify( payload ) );
     return await new CompactSign( payloadBytes )
         .setProtectedHeader({ alg: "EdDSA" })
