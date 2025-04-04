@@ -10,6 +10,7 @@ import { VerificationMethod } from "did-resolver";
 import {
     DID,
     FragmentID,
+    // prettyJson,
     resolveDocumentPartId,
     resolveFragmentId,
     setAgentHooks
@@ -28,10 +29,7 @@ import {
     OpaqueChallenge,
     VerificationKey
 } from "../src/models";
-import {
-    authStore,
-    prettyJSON
-} from "./util";
+import { authStore } from "./util";
 import {
     createEdDsaJwk,
     sign,
