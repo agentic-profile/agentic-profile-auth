@@ -10,6 +10,8 @@ import { VerificationMethod } from "did-resolver";
 import {
     DID,
     FragmentID,
+    resolveDocumentPartId,
+    resolveFragmentId,
     setAgentHooks
 } from "@agentic-profile/common";
 
@@ -26,10 +28,6 @@ import {
     OpaqueChallenge,
     VerificationKey
 } from "../src/models";
-import {
-    resolveDocumentPartId,
-    resolveFragmentId
-} from "../src/util";
 import {
     authStore,
     prettyJSON

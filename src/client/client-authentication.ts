@@ -1,9 +1,9 @@
 import { signAsync } from "@noble/ed25519";
+import { EdDSAPrivateJWK } from "@agentic-profile/common";
 
 import {
     AgenticJwsPayload,
     Attestation,
-    EdDSAPrivateJWK,
     OpaqueChallenge
 } from "../models.js"
 import {

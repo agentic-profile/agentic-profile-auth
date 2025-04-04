@@ -4,18 +4,18 @@ import {
     getPublicKeyAsync,
     utils
 } from "@noble/ed25519";
-import { ensure } from "@agentic-profile/common";
+import {
+    EdDSAPrivateJWK,
+    EdDSAPublicJWK,
+    ensure,
+    JWKSet
+} from "@agentic-profile/common";
 
 import {
     base64UrlToByteArray,
     byteArrayToBase64Url,
     stringToByteArray
 } from "./b64u.js"
-import {
-    EdDSAPrivateJWK,
-    EdDSAPublicJWK,
-    JWKSet
-} from "./models.js";
 
 
 export async function createEdDsaJwk() {

@@ -1,10 +1,3 @@
-import { FragmentID } from "@agentic-profile/common";
-import {
-    ParsedDID,
-    VerificationMethod
-} from "did-resolver";
-
-
 export function objectToBase64Url<T>(obj:T) {
     const json = JSON.stringify(obj);
     return stringToBase64Url( json );

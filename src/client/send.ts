@@ -40,7 +40,7 @@ export async function sendAuthorizedPayload({ authToken, method = "PUT", payload
 
     // ensure we got an agentic challenge
     console.log( "ensureAgenticChallenge", prettyJSON(fetchResponse) );
-    const { data } = fetchResponse;
+    const { data, response } = fetchResponse;
     const { status, statusCode } = response;
     if( statusCode !== 401 || data?.type !== AGENTIC_CHALLENGE_TYPE )
         throw new Error(`Unexpected response ${statusCode} ${status} from agentic service ${url} - ${prettyJSON(data)}`); 
