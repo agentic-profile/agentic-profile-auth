@@ -10,7 +10,7 @@ import {
     byteArrayToBase64Url,
     objectToBase64Url,
     base64UrlToByteArray
-} from "../util.js";
+} from "../b64u.js";
 
 
 export function asPayload( challenge: OpaqueChallenge, attestation: Attestation ) {

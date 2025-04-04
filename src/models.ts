@@ -4,7 +4,6 @@ import {
     FragmentID
 } from "@agentic-profile/common";
 
-export type Base64Url = string;
 export type OpaqueChallenge = any;
 
 //
@@ -17,29 +16,6 @@ export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.4";
 export interface AgenticChallenge {
     type: "agentic-challenge/0.4",
     challenge: OpaqueChallenge,  // opaque string or object
-}
-
-
-//
-// JWK
-//
-
-export interface EdDSAPublicJWK extends JsonWebKey {
-    kty: "OKP",
-    alg: "EdDSA",
-    crv: "Ed25519",
-    x: Base64Url
-}
-
-export interface EdDSAPrivateJWK extends EdDSAPublicJWK {
-    d: Base64Url
-}
-
-export interface JWKSet {
-    publicJwk: EdDSAPublicJWK
-    b64uPublicKey: Base64Url,
-    privateJwk: EdDSAPrivateJWK,
-    b64uPrivateKey: Base64Url  
 }
 
 

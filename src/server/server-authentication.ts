@@ -5,12 +5,14 @@ import {
     AgenticProfile,
     CommonHooks,
     DID,
-    FragmentID
+    ensure,
+    FragmentID,
+    isObject,
+    matchingFragmentIds
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
 
 import { verify } from "../ed25519.js";
-
 import {
     AgenticChallenge,
     AgenticJwsHeader,
@@ -20,14 +22,10 @@ import {
     ClientAgentSessionStorage,
     ClientAgentSessionUpdates
 } from "../models.js"
-
 import {
     base64UrlToObject,
     base64ToBase64Url,
-    ensure,
-    isObject,
-    matchingFragmentIds
-} from "../util.js";
+} from "../b64u.js";
 
 
 export async function createChallenge( store: ClientAgentSessionStorage ) {
