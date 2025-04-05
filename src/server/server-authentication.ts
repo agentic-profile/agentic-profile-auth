@@ -8,7 +8,8 @@ import {
     ensure,
     FragmentID,
     isObject,
-    matchingFragmentIds
+    matchingFragmentIds,
+    removeFragmentId
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
 
@@ -98,7 +99,7 @@ async function validateAuthToken( authToken: string, session: ClientAgentSession
 
     const profile = didDocument as AgenticProfile;
 
-    const verificationMethod = resolveVerificationMethod( profile!, agentDid, verificationId );
+    const verificationMethod = await resolveVerificationMethod( profile!, agentDid, verificationId );
     ensure( verificationMethod?.type === 'JsonWebKey2020','Unsupported verification type, please use JsonWebKey2020 for agents');
     const { publicKeyJwk } = verificationMethod!;
     ensure( publicKeyJwk, "Missing 'publicKeyJwk' property in verification method");
@@ -124,7 +125,7 @@ async function validateAuthToken( authToken: string, session: ClientAgentSession
 // Utility
 //
 
-function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, verificationId: FragmentID ) {
+async function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, verificationId: FragmentID ) {
     // find agent
     const agent = profile.service?.find(e=>matchingFragmentIds( e.id, agentDid ) ) as AgentService;
     if( !agent )
@@ -140,11 +141,23 @@ function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, veri
     else if( typeof methodOrId !== 'string' )
         throw new Error("Unexpected capabilityInvocation type: " + methodOrId );
 
+    // is this verification method in another did document/agentic profile?
+    const linkedDid = removeFragmentId( methodOrId );
+    if( profile.id !== linkedDid ) {
+        console.log( `Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
+        const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( linkedDid );
+        const { error } = didResolutionMetadata;
+        ensure( !error, 'Failed to resolve agentic profile from DID', error );
+        ensure( didDocument, "DID resolver failed to return agentic profile" );
+
+        profile = didDocument as AgenticProfile;
+    }
+
     // does the verification method exist in the general verificationMethod list?
-    console.log( 'searching for verification method',JSON.stringify({
+    /*console.log( 'searching for verification method',JSON.stringify({
         profile,
         verificationId
-    },null,4));
+    },null,4));*/
     const verificationMethod = profile.verificationMethod?.find(e=>matchingFragmentIds(e.id, verificationId ) );
     ensure( verificationMethod, "Verification id does not match any listed verification methods:", verificationId );
 
