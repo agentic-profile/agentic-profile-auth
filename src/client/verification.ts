@@ -63,7 +63,7 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
             // follow to another document?
             const documentId = removeFragmentId( verificationId );
             if( documentId.length > 0 && documentId !== profile.id ) {
-                console.log( `Redirecting to linked profile ${documentId}` );
+                console.log( `Redirecting to linked profile ${documentId} of ${verificationId}` );
                 ({ profile, keyring } = await profileResolver( documentId ));
             }
 

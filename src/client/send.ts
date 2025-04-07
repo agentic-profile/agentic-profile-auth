@@ -1,7 +1,12 @@
-import { prettyJson } from "@agentic-profile/common";
+import {
+    agentHooks,
+    prettyJson
+} from "@agentic-profile/common";
 import {
     AgenticChallenge,
-    AGENTIC_CHALLENGE_TYPE
+    AGENTIC_CHALLENGE_TYPE,
+    RemoteAgentSessionKey,
+    RemoteAgentSessionStorage
 } from "../models.js";
 
 type SendAuthorizedPayloadParams = {
@@ -9,11 +14,24 @@ type SendAuthorizedPayloadParams = {
     method?: "PUT" | "POST",
     payload: any,
     resolveAuthToken?: ( agenticChallenge: AgenticChallenge )=>Promise<string>,
+    sessionKey?: RemoteAgentSessionKey,
     url: string
 }
 
-export async function sendAgenticPayload({ authToken, method = "PUT", payload, resolveAuthToken, url }: SendAuthorizedPayloadParams) {
+export async function sendAgenticPayload({ authToken, method = "PUT", payload, resolveAuthToken, sessionKey, url }: SendAuthorizedPayloadParams) {
     let fetchResponse: any;
+
+    if( !authToken && sessionKey ) {
+        const session = await agentHooks<RemoteAgentSessionStorage>().fetchRemoteAgentSession?.( sessionKey );
+        if( session ) {
+            if( session.peerServiceUrl !== url ) {
+                // peer service url has changed... prepare to start new session 
+                await agentHooks<RemoteAgentSessionStorage>().deleteRemoteAgentSession?.( sessionKey );
+            } else
+                authToken = session.authToken;
+        }
+    }
+
     if( authToken ) {
         // if we were given an auth token, give it a try...
         fetchResponse = await fetchJson( url, payload, {
@@ -27,6 +45,11 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
         // simple case, ok :)
         if( fetchResponse.response.ok )
             return fetchResponse;
+
+        // auth didn't work, so...
+        // get rid of this session with invalid auth token
+        if( sessionKey )
+            await agentHooks<RemoteAgentSessionStorage>().deleteRemoteAgentSession?.( sessionKey );
     } else {
         if( !resolveAuthToken )
             throw new Error(`Cannot fetch ${url} without an authorization token`);
@@ -52,12 +75,18 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
     console.log( "Resolved authToken", abbreviate( authToken ), "Retrying request..." );
 
     // 2nd try with auth new token - may throw an Error on response != ok
-    return await fetchJson( url, payload, {
+    fetchResponse = await fetchJson( url, payload, {
         method,
         headers: {
             "Authorization": 'Agentic ' + authToken,
         },
     });
+
+    // if authToken worked, then remember it
+    if( fetchResponse.response.ok && sessionKey )
+        await agentHooks<RemoteAgentSessionStorage>().updateRemoteAgentSession?.( sessionKey, { authToken } );
+
+    return fetchResponse;
 }
 
 function abbreviate( s: string ) {

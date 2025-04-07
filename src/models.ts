@@ -1,7 +1,7 @@
 import {
-    CommonStorage,
     DID,
-    FragmentID
+    FragmentID,
+    UserID
 } from "@agentic-profile/common";
 
 export type OpaqueChallenge = any;
@@ -51,13 +51,20 @@ export interface ClientAgentSession {
     authToken: string        // JWT presented by client as HTTPS "Authorization: Agentic <authToken>"
 }
 
-// on client side, session/agent token for communicating with remote/server agentUrl
-export interface RemoteAgentSession {
-    uid: number,
+// on client side, session/agent token for communicating with remote/server agent
+export interface RemoteAgentSessionKey {
+    uid: UserID
     userAgentDid: DID,
-    peerAgentDid: DID,      // agent we are communicating with, including fragment
-    peerServiceUrl: string, // HTTP(S) endpoint of service
+    peerAgentDid?: DID,
+    peerServiceUrl?: string // HTTP(S) endpoint of service
+}
+
+export interface RemoteAgentSession extends RemoteAgentSessionKey {
     created: Date,
+    authToken: string       // auth token to use for HTTPS "Authorization: Agentic <authToken>"
+}
+
+export interface RemoteAgentSessionUpdate {
     authToken: string       // auth token to use for HTTPS "Authorization: Agentic <authToken>"
 }
 
@@ -71,8 +78,14 @@ export interface ClientAgentSessionUpdates {
     authToken?: string
 }
 
-export interface ClientAgentSessionStorage extends CommonStorage {
+export interface ClientAgentSessionStorage  {
     createClientAgentSession: ( challenge:string )=>Promise<number>,
     fetchClientAgentSession: ( id:number )=>Promise<ClientAgentSession | undefined>,
     updateClientAgentSession: ( id:number, updates:ClientAgentSessionUpdates )=>Promise<void>
+}
+
+export interface RemoteAgentSessionStorage {
+    fetchRemoteAgentSession: ( key: RemoteAgentSessionKey )=>Promise<RemoteAgentSession | undefined>,
+    updateRemoteAgentSession: ( key: RemoteAgentSessionKey, update: RemoteAgentSessionUpdate )=>Promise<void>,
+    deleteRemoteAgentSession: ( key: RemoteAgentSessionKey )=>Promise<void>,
 }
