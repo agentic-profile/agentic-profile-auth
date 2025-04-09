@@ -63,7 +63,7 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
             // follow to another document?
             const documentId = removeFragmentId( verificationId );
             if( documentId.length > 0 && documentId !== profile.id ) {
-                console.log( `Redirecting to linked profile ${documentId} of ${verificationId}` );
+                console.log( `resolveVerificationKey() using linked profile ${documentId} of ${verificationId}` );
                 ({ profile, keyring } = await profileResolver( documentId ));
             }
 
@@ -76,7 +76,7 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
             const found = profile.verificationMethod?.find(e=>e.id === fragmentId);
             if( !found ) {
                 console.log( `INVALID agentic profile, verification method does not resolve for ${agentDid} verification id ${verificationId}` );
-                continue;   // invalid AgenticProfile... fix!
+                continue;   // invalid AgenticProfile... fix!  (and keep looking for now...)
             }
             verificationMethod = found;
         } else if( typeof idOrMethod === 'object' ) {

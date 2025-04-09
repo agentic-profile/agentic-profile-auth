@@ -9,7 +9,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agentic-profile/auth@workspace:."
   dependencies:
-    "@agentic-profile/common": "npm:^0.4.5"
+    "@agentic-profile/common": "npm:^0.4.6"
     "@babel/core": "npm:^7.26.9"
     "@babel/preset-env": "npm:^7.26.9"
     "@babel/preset-typescript": "npm:^7.26.0"
@@ -27,12 +27,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agentic-profile/common@npm:^0.4.5":
-  version: 0.4.5
-  resolution: "@agentic-profile/common@npm:0.4.5"
+"@agentic-profile/common@npm:^0.4.6":
+  version: 0.4.6
+  resolution: "@agentic-profile/common@npm:0.4.6"
   dependencies:
     did-resolver: "npm:^4.1.0"
-  checksum: 10c0/0c77bc1f5f9b47c270ff1de02392142e25cdd880d1c80880f05982c81fefbe4045e077ad6bf176c9914819050f81029cb68863a83884d2c9d68cac589352b0de
+  checksum: 10c0/c1c9dbab44bfdaefbf5f19adb9d62c9229cedea14aeb391ab0fe7b2e0007b5c3d7696238161aeba4aae1ec90a5d73f34e108230d7a46d5157f6d7e48077e028a
   languageName: node
   linkType: hard
 

@@ -48,7 +48,7 @@ export interface ClientAgentSession {
     created: Date,
     challenge: string,
     agentDid: DID,           // SHOULD include agent/service qualifier fragment, e.g. did:web:example.com:dave#agent-7
-    authToken: string        // JWT presented by client as HTTPS "Authorization: Agentic <authToken>"
+    authToken: string        // compact JWT presented by client as HTTPS "Authorization: Agentic <authToken>"
 }
 
 // on client side, session/agent token for communicating with remote/server agent

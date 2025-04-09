@@ -1,5 +1,7 @@
 import {
     agentHooks,
+    CommonHooks,
+    createTimer,
     prettyJson
 } from "@agentic-profile/common";
 import {
@@ -18,18 +20,22 @@ type SendAuthorizedPayloadParams = {
     url: string
 }
 
+function storage() {
+    return agentHooks<CommonHooks>().storage as unknown as RemoteAgentSessionStorage;
+}
+
 export async function sendAgenticPayload({ authToken, method = "PUT", payload, resolveAuthToken, sessionKey, url }: SendAuthorizedPayloadParams) {
+    if( sessionKey && sessionKey.peerServiceUrl && sessionKey.peerServiceUrl != url )
+        throw new Error(`sendAgenticPayload() sessionKey.peerServiceUrl != url for ${url}`);
+
     let fetchResponse: any;
+    const { elapsed } = createTimer("sendAgenticPayload()");
 
     if( !authToken && sessionKey ) {
-        const session = await agentHooks<RemoteAgentSessionStorage>().fetchRemoteAgentSession?.( sessionKey );
-        if( session ) {
-            if( session.peerServiceUrl !== url ) {
-                // peer service url has changed... prepare to start new session 
-                await agentHooks<RemoteAgentSessionStorage>().deleteRemoteAgentSession?.( sessionKey );
-            } else
-                authToken = session.authToken;
-        }
+        const session = await storage().fetchRemoteAgentSession( sessionKey );
+        elapsed( "fetched remote agent session", !!session, sessionKey );
+        if( session )
+            authToken = session.authToken;
     }
 
     if( authToken ) {
@@ -41,6 +47,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
                 "Authorization": 'Agentic ' + authToken,
             },
         });
+        elapsed( "initial fetch with authToken", fetchResponse.response.ok, url );
 
         // simple case, ok :)
         if( fetchResponse.response.ok )
@@ -48,18 +55,20 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
 
         // auth didn't work, so...
         // get rid of this session with invalid auth token
-        if( sessionKey )
-            await agentHooks<RemoteAgentSessionStorage>().deleteRemoteAgentSession?.( sessionKey );
+        if( sessionKey ) {
+            await storage().deleteRemoteAgentSession( sessionKey );
+            elapsed( "deleted remote agent session; initial auth failed" );
+        }
     } else {
         if( !resolveAuthToken )
             throw new Error(`Cannot fetch ${url} without an authorization token`);
 
         // no authToken provided, so dummy request to get agentic challenge
-        console.log( `No authToken provided, requesting challenge from ${url}` );
         fetchResponse = await fetchJson( url, undefined, {
             dontThrow: true,
             method,
         });
+        elapsed( "initial fetch with NO authToken", fetchResponse.response.ok, url );
     }
 
     // ensure we got an agentic challenge
@@ -72,7 +81,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
         throw new Error(`Cannot resolve authorization for challenge from ${url} - missing callback`);
 
     authToken = await resolveAuthToken( data as AgenticChallenge );
-    console.log( "Resolved authToken", abbreviate( authToken ), "Retrying request..." );
+    elapsed( "resolved authToken", abbreviate( authToken ), "Retrying request..." );
 
     // 2nd try with auth new token - may throw an Error on response != ok
     fetchResponse = await fetchJson( url, payload, {
@@ -81,10 +90,13 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
             "Authorization": 'Agentic ' + authToken,
         },
     });
+    elapsed( "second fetch with new authToken", fetchResponse.response.ok, url );
 
     // if authToken worked, then remember it
-    if( fetchResponse.response.ok && sessionKey )
-        await agentHooks<RemoteAgentSessionStorage>().updateRemoteAgentSession?.( sessionKey, { authToken } );
+    if( fetchResponse.response.ok && sessionKey ) {
+        await storage().updateRemoteAgentSession( sessionKey, { authToken } );
+        elapsed( "updated remote agent session", fetchResponse.response.ok );
+    }
 
     return fetchResponse;
 }
