@@ -10,6 +10,7 @@ import {
     resolveFragmentId
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
+import log from "loglevel";
 
 import { AgenticChallenge } from "../models.js";
 import { signChallenge } from "./client-authentication.js";
@@ -63,7 +64,7 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
             // follow to another document?
             const documentId = removeFragmentId( verificationId );
             if( documentId.length > 0 && documentId !== profile.id ) {
-                console.log( `resolveVerificationKey() using linked profile ${documentId} of ${verificationId}` );
+                log.debug( `resolveVerificationKey() using linked profile ${documentId} of ${verificationId}` );
                 ({ profile, keyring } = await profileResolver( documentId ));
             }
 
@@ -75,7 +76,7 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
 
             const found = profile.verificationMethod?.find(e=>e.id === fragmentId);
             if( !found ) {
-                console.log( `INVALID agentic profile, verification method does not resolve for ${agentDid} verification id ${verificationId}` );
+                log.warn( `INVALID agentic profile, verification method does not resolve for ${agentDid} verification id ${verificationId}` );
                 continue;   // invalid AgenticProfile... fix!  (and keep looking for now...)
             }
             verificationMethod = found;
@@ -86,7 +87,7 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
             throw new Error(`INVALID agentic profile, verification method is of unknown type: ${typeof idOrMethod} for ${profile.id}`);
 
         if( verificationMethod.type !== "JsonWebKey2020" ) {
-            console.log( `Skipping unsupported verification type ${verificationMethod.type} for ${profile.id}` )
+            log.warn( `Skipping unsupported verification type ${verificationMethod.type} for ${profile.id}` )
             continue;
         }
 

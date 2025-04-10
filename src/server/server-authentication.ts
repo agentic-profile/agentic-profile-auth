@@ -12,6 +12,7 @@ import {
     removeFragmentId
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
+import log from "loglevel";
 
 import { verify } from "../ed25519.js";
 import {
@@ -144,7 +145,7 @@ async function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID
     // is this verification method in another did document/agentic profile?
     const linkedDid = removeFragmentId( methodOrId );
     if( profile.id !== linkedDid ) {
-        console.log( `Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
+        log.debug( `Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
         const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( linkedDid );
         const { error } = didResolutionMetadata;
         ensure( !error, 'Failed to resolve agentic profile from DID', error );
