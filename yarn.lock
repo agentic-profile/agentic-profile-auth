@@ -9,7 +9,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agentic-profile/auth@workspace:."
   dependencies:
-    "@agentic-profile/common": "npm:^0.4.6"
+    "@agentic-profile/common": "npm:^0.4.8"
     "@babel/core": "npm:^7.26.9"
     "@babel/preset-env": "npm:^7.26.9"
     "@babel/preset-typescript": "npm:^7.26.0"
@@ -27,14 +27,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agentic-profile/common@portal:/Users/mike/projects/iamagentic/agentic-profile-common::locator=%40agentic-profile%2Fauth%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@agentic-profile/common@portal:/Users/mike/projects/iamagentic/agentic-profile-common::locator=%40agentic-profile%2Fauth%40workspace%3A."
+"@agentic-profile/common@npm:^0.4.8":
+  version: 0.4.8
+  resolution: "@agentic-profile/common@npm:0.4.8"
   dependencies:
     did-resolver: "npm:^4.1.0"
     loglevel: "npm:^1.9.2"
+  checksum: 10c0/7e1abc24fdda60f198968e3dff3e46d62c5e8c545afa8666ce27165f37fec4f3958ee54ddff741c53e0bf1664c1a9c6084614cc41327fed9e332c75eeba7aca6
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@ampproject/remapping@npm:^2.2.0":
   version: 2.3.0
