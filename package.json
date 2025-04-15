@@ -1,6 +1,6 @@
 {
   "name": "@agentic-profile/auth",
-  "version": "0.4.8",
+  "version": "0.4.10",
   "description": "Agentic Profile library for discovery, authentication, and communication with AI Agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/agentic-profile/agentic-profile-auth#readme",
   "dependencies": {
-    "@agentic-profile/common": "^0.4.8",
+    "@agentic-profile/common": "^0.4.10",
     "@noble/ed25519": "^2.2.3"
   },
   "devDependencies": {
