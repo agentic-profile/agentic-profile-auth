@@ -1,6 +1,6 @@
 {
   "name": "@agentic-profile/auth",
-  "version": "0.4.10",
+  "version": "0.5.0",
   "description": "Agentic Profile library for discovery, authentication, and communication with AI Agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,6 +15,7 @@
   },
   "files": [
     "dist",
+    "LICENSE",
     "README.md"
   ],
   "type": "module",
@@ -23,19 +24,20 @@
     "url": "git+https://github.com/agentic-profile/agentic-profile-auth.git"
   },
   "author": "Mike Prince",
-  "license": "MIT",
+  "license": "Apache-2",
   "bugs": {
     "url": "https://github.com/agentic-profile/agentic-profile-auth/issues"
   },
   "homepage": "https://github.com/agentic-profile/agentic-profile-auth#readme",
   "dependencies": {
-    "@agentic-profile/common": "^0.4.10",
+    "@agentic-profile/common": "^0.5.0",
     "@noble/ed25519": "^2.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.26.9",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-typescript": "^7.26.0",
+    "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.9.2",
     "babel-jest": "^29.7.0",
@@ -46,6 +48,5 @@
     "ts-node": "^10.9.2",
     "tsup": "^8.3.6",
     "typescript": "^5.7.2"
-  },
-  "packageManager": "yarn@4.8.1"
+  }
 }

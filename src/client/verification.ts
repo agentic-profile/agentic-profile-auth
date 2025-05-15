@@ -4,7 +4,9 @@ import {
     Base64Url,
     DID,
     FragmentID,
-    JWKSet,
+    JWKSet
+} from "@agentic-profile/common/schema";
+import {
     matchingFragmentIds,
     removeFragmentId,
     resolveFragmentId
@@ -30,16 +32,6 @@ export type GenerateAuthTokenParams = {
 }
 
 export async function generateAuthToken({ agentDid, agenticChallenge, profileResolver }: GenerateAuthTokenParams) {
-    /*
-    const { profile, keyring } = await loadProfileAndKeyring( profileDir );
-    if( !profile )
-        throw new Error(`Failed to load agentic profile from ${profileDir}/did.json`);
-    if( !keyring )
-        throw new Error(`Failed to load agentic keyring from ${profileDir}/keyring.json`);
-    
-    const agentDid = `${profile.id}#agent-${agentSubtype}`;
-    */
-
     const { verificationId, privateJwk } = await resolveVerificationKey( agentDid, profileResolver );
     const attestation = { agentDid, verificationId };
     const { challenge } = agenticChallenge;

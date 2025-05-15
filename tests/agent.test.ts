@@ -10,7 +10,6 @@ import { VerificationMethod } from "did-resolver";
 import {
     DID,
     FragmentID,
-    // prettyJson,
     resolveDocumentPartId,
     resolveFragmentId,
     setAgentHooks
@@ -37,33 +36,37 @@ import {
 } from "../src/ed25519";
 
 
-// Ugh, agentHooks are outside testing scope...
-const agenticProfileMap = new Map<DID,AgenticProfile>();
-function registerProfile( profile: AgenticProfile ) {
-    agenticProfileMap.set( profile.id, profile );
-    console.log( 'registered profile', profile.id );
-}
-const didResolver = {
-    resolve: ( did: DID ) => {
-        const id = did.split('#')[0];
+function createDidResolver() {
+    const agenticProfileMap = new Map<DID,AgenticProfile>();
 
-        const didDocument = agenticProfileMap.get( id );
-        console.log( 'resolve', id, !!didDocument );
+    const registerProfile = ( profile: AgenticProfile ) => {
+        agenticProfileMap.set( profile.id, profile );
+        console.log( 'registered profile', profile.id );
+    }
 
-        const didResolutionMetadata = didDocument ? { contentType: "application/json" }
-            : {
-                error: `Failed to resolve DID document ${id}`,
-                message: "DID does not have a document",
-            };
+    const didResolver = {
+        resolve: ( did: DID ) => {
+            const id = did.split('#')[0];
 
-        return {
-            didDocument,
-            didDocumentMetadata: {},
-            didResolutionMetadata
+            const didDocument = agenticProfileMap.get( id );
+            console.log( 'resolve', id, !!didDocument );
+
+            const didResolutionMetadata = didDocument ? { contentType: "application/json" }
+                : {
+                    error: `Failed to resolve DID document ${id}`,
+                    message: "DID does not have a document",
+                };
+
+            return {
+                didDocument,
+                didDocumentMetadata: {},
+                didResolutionMetadata
+            }
         }
     }
+
+    return { didResolver, registerProfile };
 }
-setAgentHooks({ didResolver });
 
 let nextUserId = 1;
 function nextDid() {
@@ -88,14 +91,12 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
             privateJwk: localKeys.privateJwk,
             attestation
         });
-        //console.log( "joseSignedLocal", prettyJSON( joseSignedLocal ));
 
         const localSignedLocal = await signChallenge({
             challenge,
             privateJwk: localKeys.privateJwk,
             attestation
         });
-        //console.log( "localSignedLocal", prettyJSON( localSignedLocal ));
 
         expect( joseSignedLocal ).toBe( localSignedLocal );
 
@@ -106,14 +107,12 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
             privateJwk: joseKeys.privateJwk,
             attestation
         });
-        //console.log( "joseSignedJose", prettyJSON( joseSignedJose ));
 
         const localSignedJose = await signChallenge({
             challenge,
             privateJwk: joseKeys.privateJwk,
             attestation
         });
-        //console.log( "localSignedJose", prettyJSON( localSignedJose ));
 
         expect( joseSignedJose ).toBe( localSignedJose );
     });
@@ -143,10 +142,11 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
                 agentService
             ]
         };
+
+        const { registerProfile, didResolver } = createDidResolver();
         registerProfile( agenticProfile );
 
-        const options = { mocks: { agenticProfile } };
-        const session = await handleAuthorization( "Agentic " + authToken, authStore );
+        const session = await handleAuthorization( "Agentic " + authToken, authStore, didResolver );
         expect( !!session ).toBe( true );
     });
 
@@ -172,9 +172,11 @@ describe("Agent Authentication with JWS and DID based Agentic Profiles", () => {
                 agentService
             ]
         };
+
+        const { registerProfile, didResolver } = createDidResolver();
         registerProfile(  agenticProfile );
 
-        const session = await handleAuthorization( "Agentic " + authToken, authStore );
+        const session = await handleAuthorization( "Agentic " + authToken, authStore, didResolver );
         expect( !!session ).toBe( true );
     });
 });
@@ -220,7 +222,6 @@ async function joseSignChallenge({ challenge, privateJwk, attestation }: Params 
 async function createJoseJwk() {
     // 1. Generate an Ed25519 key pair
     const { publicKey, privateKey } = await generateKeyPair( "Ed25519", { extractable: true } );
-    //console.log( "createJoseJWK", publicKey, privateKey );
 
     // 2. Export the private and public key in JWK format
     const privateJwk = await exportJWK(privateKey);
@@ -234,7 +235,6 @@ async function createJoseJwk() {
     publicJwk.use = "sig";          // Key usage for verification
 
     const result = { publicJwk, privateJwk };
-    //console.log( "jose jwk", prettyJSON( result ) );
 
     return result;
 }
@@ -252,8 +252,6 @@ function craftAgenticProfile( id: DID ) {
 }
 
 function craftAgentService( did: DID, verificationMethod: FragmentID | VerificationMethod ) {
-    //console.log('craftAgenticService',did,verificationMethod);
-
     const agentService = {
         id: did + "#agentic-chat",
         type: "Agentic/Chat",

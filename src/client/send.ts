@@ -1,6 +1,4 @@
 import {
-    agentHooks,
-    CommonHooks,
     createTimer,
     prettyJson
 } from "@agentic-profile/common";
@@ -8,23 +6,30 @@ import {
     AgenticChallenge,
     AGENTIC_CHALLENGE_TYPE,
     RemoteAgentSessionKey,
-    RemoteAgentSessionStorage
+    RemoteAgentSessionStore
 } from "../models.js";
 
-type SendAuthorizedPayloadParams = {
+type SendAgenticPayloadParams = {
     authToken?: string,
+    fetchImpl?: typeof fetch,
     method?: "PUT" | "POST",
     payload: any,
     resolveAuthToken?: ( agenticChallenge: AgenticChallenge )=>Promise<string>,
     sessionKey?: RemoteAgentSessionKey,
-    url: string
+    url: string,
+    store: RemoteAgentSessionStore,
 }
 
-function storage() {
-    return agentHooks<CommonHooks>().storage as unknown as RemoteAgentSessionStorage;
-}
-
-export async function sendAgenticPayload({ authToken, method = "PUT", payload, resolveAuthToken, sessionKey, url }: SendAuthorizedPayloadParams) {
+export async function sendAgenticPayload({
+    authToken,
+    fetchImpl,
+    method = "PUT",
+    payload,
+    resolveAuthToken,
+    sessionKey,
+    store,
+    url 
+}: SendAgenticPayloadParams) {
     if( sessionKey && sessionKey.peerServiceUrl && sessionKey.peerServiceUrl != url )
         throw new Error(`sendAgenticPayload() sessionKey.peerServiceUrl != url for ${url}`);
 
@@ -32,7 +37,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
     const { elapsed } = createTimer("sendAgenticPayload()");
 
     if( !authToken && sessionKey ) {
-        const session = await storage().fetchRemoteAgentSession( sessionKey );
+        const session = await store.fetchRemoteAgentSession( sessionKey );
         elapsed( "fetched remote agent session", !!session, sessionKey );
         if( session )
             authToken = session.authToken;
@@ -41,6 +46,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
     if( authToken ) {
         // if we were given an auth token, give it a try...
         fetchResponse = await fetchJson( url, payload, {
+            fetchImpl,
             dontThrow: true,
             method,
             headers: {
@@ -56,7 +62,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
         // auth didn't work, so...
         // get rid of this session with invalid auth token
         if( sessionKey ) {
-            await storage().deleteRemoteAgentSession( sessionKey );
+            await store.deleteRemoteAgentSession( sessionKey );
             elapsed( "deleted remote agent session; initial auth failed" );
         }
     } else {
@@ -65,6 +71,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
 
         // no authToken provided, so dummy request to get agentic challenge
         fetchResponse = await fetchJson( url, undefined, {
+            fetchImpl,
             dontThrow: true,
             method,
         });
@@ -85,6 +92,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
 
     // 2nd try with auth new token - may throw an Error on response != ok
     fetchResponse = await fetchJson( url, payload, {
+        fetchImpl,
         method,
         headers: {
             "Authorization": 'Agentic ' + authToken,
@@ -94,7 +102,7 @@ export async function sendAgenticPayload({ authToken, method = "PUT", payload, r
 
     // if authToken worked, then remember it
     if( fetchResponse.response.ok && sessionKey ) {
-        await storage().updateRemoteAgentSession( sessionKey, { authToken } );
+        await store.updateRemoteAgentSession( sessionKey, { authToken } );
         elapsed( "updated remote agent session", fetchResponse.response.ok );
     }
 
@@ -105,11 +113,11 @@ function abbreviate( s: string ) {
     return s.length > 8 ? `${s.slice(0, 4)}...${s.slice(-4)}` : s;
 }
 
-
 type FetchJsonOptions = {
     method?: "GET" | "PUT" | "POST",
     headers?: any,
-    dontThrow?: boolean
+    dontThrow?: boolean,
+    fetchImpl?: typeof fetch
 }
 
 export async function getJson( url: string, options: FetchJsonOptions = {} ) {
@@ -125,14 +133,12 @@ export async function postJson( url: string, payload: any, options: FetchJsonOpt
 }
 
 export async function fetchJson( url: string, payload: any, options: FetchJsonOptions = {} ) {
+    const { dontThrow, fetchImpl = fetch, ...fetchOptions } = options;
     const config = {
         method: "GET",
         headers: {},
-        ...options
+        ...fetchOptions
     } as any;
-
-    if( options.dontThrow )
-        delete config.dontThrow;    // remove extra options from config
 
     if( !config.body && !!payload ) {
         config.body = JSON.stringify( payload );
@@ -144,7 +150,7 @@ export async function fetchJson( url: string, payload: any, options: FetchJsonOp
     }
     config.headers["Accept"] = "application/json";
 
-    const response = await fetch( url, config );
+    const response = await fetchImpl( url, config );
     if( !response.ok && options.dontThrow !== true )
         throw new Error(`Failed to fetch ${url} - ${response.status} ${response.statusText}`)
 

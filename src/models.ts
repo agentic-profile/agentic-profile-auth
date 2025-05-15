@@ -2,7 +2,7 @@ import {
     DID,
     FragmentID,
     UserID
-} from "@agentic-profile/common";
+} from "@agentic-profile/common/schema";
 
 export type OpaqueChallenge = any;
 
@@ -10,11 +10,11 @@ export type OpaqueChallenge = any;
 // Challenge when no Authorization token provided, or it is invalid
 //
 
-export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.4";
+export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.5";
 
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
-    type: "agentic-challenge/0.4",
+    type: "agentic-challenge/0.5",
     challenge: OpaqueChallenge,  // opaque string or object
 }
 
@@ -38,11 +38,12 @@ export interface Attestation {
     verificationId: FragmentID  // the verification method used to sign this JWS
 }
 
+
 //
-// Session Management
+// Client Session Management
+// On the remote/server side, session tracks client/agent that is communicating with the server
 //
 
-// On the remote/server side, session tracks client/agent that is communicating with them
 export interface ClientAgentSession {
     id: number,
     created: Date,
@@ -51,7 +52,23 @@ export interface ClientAgentSession {
     authToken: string        // compact JWT presented by client as HTTPS "Authorization: Agentic <authToken>"
 }
 
+export interface ClientAgentSessionUpdates {
+    agentDid?: DID,
+    authToken?: string
+}
+
+export interface ClientAgentSessionStore  {
+    createClientAgentSession( challenge:string ): Promise<number>,
+    fetchClientAgentSession( id:number ): Promise<ClientAgentSession | undefined>,
+    updateClientAgentSession( id:number, updates:ClientAgentSessionUpdates ): Promise<void>
+}
+
+
+//
+// Remote Session Management
 // on client side, session/agent token for communicating with remote/server agent
+//
+
 export interface RemoteAgentSessionKey {
     uid: UserID
     userAgentDid: DID,
@@ -68,24 +85,8 @@ export interface RemoteAgentSessionUpdate {
     authToken: string       // auth token to use for HTTPS "Authorization: Agentic <authToken>"
 }
 
-
-//
-// Storage
-//
-
-export interface ClientAgentSessionUpdates {
-    agentDid?: DID,
-    authToken?: string
-}
-
-export interface ClientAgentSessionStorage  {
-    createClientAgentSession: ( challenge:string )=>Promise<number>,
-    fetchClientAgentSession: ( id:number )=>Promise<ClientAgentSession | undefined>,
-    updateClientAgentSession: ( id:number, updates:ClientAgentSessionUpdates )=>Promise<void>
-}
-
-export interface RemoteAgentSessionStorage {
-    fetchRemoteAgentSession: ( key: RemoteAgentSessionKey )=>Promise<RemoteAgentSession | undefined>,
-    updateRemoteAgentSession: ( key: RemoteAgentSessionKey, update: RemoteAgentSessionUpdate )=>Promise<void>,
-    deleteRemoteAgentSession: ( key: RemoteAgentSessionKey )=>Promise<void>,
+export interface RemoteAgentSessionStore {
+    fetchRemoteAgentSession( key: RemoteAgentSessionKey ): Promise<RemoteAgentSession | undefined>,
+    updateRemoteAgentSession( key: RemoteAgentSessionKey, update: RemoteAgentSessionUpdate ): Promise<void>,
+    deleteRemoteAgentSession( key: RemoteAgentSessionKey ): Promise<void>,
 }

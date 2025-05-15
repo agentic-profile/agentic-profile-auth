@@ -10,8 +10,8 @@ import {
 } from "./util";
 
 describe("Ed25519", () => {
-    let keypair, b64uSignature;
-    let b64uPublicKey, b64uPrivateKey;
+    let keypair, b64uSignature: string;
+    let b64uPublicKey: string, b64uPrivateKey: string;
 
     const message = "spaghetti";
 
@@ -36,15 +36,15 @@ describe("Ed25519", () => {
 
     test('incorrect messages', async () => {
         expect( await verify( b64uSignature, "pasta", b64uPublicKey ) ).toBe( false );
-        expect( verify( b64uSignature, undefined, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a message");
-        expect( verify( b64uSignature, null, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a message");
+        expect( verify( b64uSignature, undefined as any, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a message");
+        expect( verify( b64uSignature, null as any, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a message");
         expect( await verify( b64uSignature, message + '!', b64uPublicKey ) ).toBe( false );
     });
 
     test('incorrect signatures', async () => {
         expect( await verify( mutateBase64( b64uSignature ), message, b64uPublicKey ) ).toBe( false );
-        expect( verify( null, message, b64uPublicKey ) ).rejects.toThrow( "Ed25519 verify() requires a signature" );
-        expect( verify( undefined, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a signature");
+        expect( verify( null as any, message, b64uPublicKey ) ).rejects.toThrow( "Ed25519 verify() requires a signature" );
+        expect( verify( undefined as any, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a signature");
         expect( verify( 'a' + b64uSignature, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: Uint8Array of valid length expected");
         expect( verify( '!' + b64uSignature, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: Invalid character");
         expect( verify( b64uSignature.substring(1), message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: The string to be decoded is not correctly encoded.");

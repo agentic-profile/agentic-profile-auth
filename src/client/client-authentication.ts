@@ -1,5 +1,5 @@
 import { signAsync } from "@noble/ed25519";
-import { EdDSAPrivateJWK } from "@agentic-profile/common";
+import { EdDSAPrivateJWK } from "@agentic-profile/common/schema";
 
 import {
     AgenticJwsPayload,

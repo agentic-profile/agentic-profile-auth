@@ -1,17 +1,17 @@
 import crypto from "crypto";
 import {
-    agentHooks,
     AgentService,
     AgenticProfile,
-    CommonHooks,
     DID,
+    FragmentID
+} from "@agentic-profile/common/schema";
+import {
     ensure,
-    FragmentID,
     isObject,
     matchingFragmentIds,
     removeFragmentId
 } from "@agentic-profile/common";
-import { VerificationMethod } from "did-resolver";
+import { Resolver, VerificationMethod } from "did-resolver";
 import log from "loglevel";
 
 import { verify } from "../ed25519.js";
@@ -21,7 +21,7 @@ import {
     AgenticJwsPayload,
     AGENTIC_CHALLENGE_TYPE,
     ClientAgentSession,
-    ClientAgentSessionStorage,
+    ClientAgentSessionStore,
     ClientAgentSessionUpdates
 } from "../models.js"
 import {
@@ -30,7 +30,7 @@ import {
 } from "../b64u.js";
 
 
-export async function createChallenge( store: ClientAgentSessionStorage ) {
+export async function createChallenge( store: ClientAgentSessionStore ) {
     const secret = base64ToBase64Url( crypto.randomBytes(32).toString("base64") );   
     const id = await store.createClientAgentSession( secret );
     return { 
@@ -49,7 +49,11 @@ function unpackCompactJws( jws: string ) {
 
 // authorization: "Agent <JSON encoded auth token>"
 // JSON encoded token: { id: number, sessionKey: string }
-export async function handleAuthorization( authorization: string, store: ClientAgentSessionStorage ): Promise<ClientAgentSession> {
+export async function handleAuthorization(
+    authorization: string,
+    store: ClientAgentSessionStore,
+    didResolver: Resolver
+): Promise<ClientAgentSession> {
     const tokens = authorization.trim().split(/\s+/);
     ensure( tokens[0].toLowerCase() === "agentic", "Unsupported authorization type: ", tokens[0] );
     ensure( tokens.length >= 2, "Missing Agentic authorization token" );
@@ -68,8 +72,8 @@ export async function handleAuthorization( authorization: string, store: ClientA
     ensure( session, "Failed to find agent session", challengeId );
 
     if( !session!.authToken ) {
-        // session not started yet, so validate auth token
-        return validateAuthToken( authToken, session!, store );  
+        // session has not started yet, so validate auth token
+        return validateAuthToken( authToken, session!, store, didResolver );  
     }
 
     if( session!.authToken !== authToken )
@@ -78,7 +82,12 @@ export async function handleAuthorization( authorization: string, store: ClientA
         return session!;
 }
 
-async function validateAuthToken( authToken: string, session: ClientAgentSession, store: ClientAgentSessionStorage ): Promise<ClientAgentSession> {
+async function validateAuthToken(
+    authToken: string,
+    session: ClientAgentSession,
+    store: ClientAgentSessionStore,
+    didResolver: Resolver
+): Promise<ClientAgentSession> {
     const { header, payload } = unpackCompactJws( authToken );
     ensure( header?.alg === 'EdDSA', 'Only EdDSA JWS is currently supported' );
     const { challenge, attest } = payload;
@@ -93,14 +102,14 @@ async function validateAuthToken( authToken: string, session: ClientAgentSession
     ensure( expectedChallenge === signedChallenge, 'Signed challenge is different than expected:', signedChallenge, '!=', expectedChallenge );
 
     // verify publicKey in signature is from user specified in agentDid
-    const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( agentDid );
+    const { didDocument, didResolutionMetadata } = await didResolver.resolve( agentDid );
     const { error } = didResolutionMetadata;
     ensure( !error, 'Failed to resolve agentic profile from DID', error );
     ensure( didDocument, "DID resolver failed to return agentic profile" );
 
     const profile = didDocument as AgenticProfile;
 
-    const verificationMethod = await resolveVerificationMethod( profile!, agentDid, verificationId );
+    const verificationMethod = await resolveVerificationMethod( profile!, agentDid, verificationId, didResolver );
     ensure( verificationMethod?.type === 'JsonWebKey2020','Unsupported verification type, please use JsonWebKey2020 for agents');
     const { publicKeyJwk } = verificationMethod!;
     ensure( publicKeyJwk, "Missing 'publicKeyJwk' property in verification method");
@@ -126,7 +135,12 @@ async function validateAuthToken( authToken: string, session: ClientAgentSession
 // Utility
 //
 
-async function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID, verificationId: FragmentID ) {
+async function resolveVerificationMethod(
+    profile: AgenticProfile,
+    agentDid: DID,
+    verificationId: FragmentID,
+    didResolver: Resolver
+) {
     // find agent
     const agent = profile.service?.find(e=>matchingFragmentIds( e.id, agentDid ) ) as AgentService;
     if( !agent )
@@ -146,7 +160,7 @@ async function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID
     const linkedDid = removeFragmentId( methodOrId );
     if( profile.id !== linkedDid ) {
         log.debug( `Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
-        const { didDocument, didResolutionMetadata } = await agentHooks<CommonHooks>().didResolver.resolve( linkedDid );
+        const { didDocument, didResolutionMetadata } = await didResolver.resolve( linkedDid );
         const { error } = didResolutionMetadata;
         ensure( !error, 'Failed to resolve agentic profile from DID', error );
         ensure( didDocument, "DID resolver failed to return agentic profile" );
@@ -154,11 +168,6 @@ async function resolveVerificationMethod( profile: AgenticProfile, agentDid: DID
         profile = didDocument as AgenticProfile;
     }
 
-    // does the verification method exist in the general verificationMethod list?
-    /*console.log( 'searching for verification method',JSON.stringify({
-        profile,
-        verificationId
-    },null,4));*/
     const verificationMethod = profile.verificationMethod?.find(e=>matchingFragmentIds(e.id, verificationId ) );
     ensure( verificationMethod, "Verification id does not match any listed verification methods:", verificationId );
 
