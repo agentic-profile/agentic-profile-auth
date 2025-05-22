@@ -8,8 +8,5 @@ export default defineConfig({
     sourcemap: true,
     clean: true,
     outDir: "dist",
-    target: "esnext",
-    external: [
-        "loglevel"
-    ]
+    target: "esnext"
 });

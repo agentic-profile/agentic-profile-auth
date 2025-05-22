@@ -47,7 +47,7 @@ function unpackCompactJws( jws: string ) {
     return { header, payload, b64uSignature };
 }
 
-// authorization: "Agent <JSON encoded auth token>"
+// authorization: "Agentic <JSON encoded auth token>"
 // JSON encoded token: { id: number, sessionKey: string }
 export async function handleAuthorization(
     authorization: string,

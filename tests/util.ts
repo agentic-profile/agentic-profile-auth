@@ -41,7 +41,5 @@ export const authStore = {
             throw new Error("Failed to find client session by id: " + id );
         else
             sessionMap.set( id, { ...session, ...updates } );
-    },
-
-
+    }
 } as AgentAuthStore;

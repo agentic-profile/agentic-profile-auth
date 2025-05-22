@@ -33,7 +33,7 @@ export async function signChallenge({ challenge, attestation, privateJwk }: Para
 }
 
 // Function to create a JWS (JWT without encryption)
-async function createJWS( payload: any, privateKey: Uint8Array ) {
+async function createJWS( payload: AgenticJwsPayload, privateKey: Uint8Array ) {
     const header = { alg: "EdDSA" };
 
     // Encode header & payload using base64url
