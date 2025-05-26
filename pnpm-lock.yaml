@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@agentic-profile/common':
-        specifier: ^0.5.0
-        version: 0.5.1
+        specifier: ^0.5.4
+        version: 0.5.4
       '@noble/ed25519':
         specifier: ^2.2.3
         version: 2.2.3
@@ -66,8 +66,8 @@ importers:
 
 packages:
 
-  '@agentic-profile/common@0.5.1':
-    resolution: {integrity: sha512-9/AM7cN4Xx3XvLyR5+vir17PYhQ89q/E09tkC7Df94eUpSqlA+cze7V6ikJZcxBcEaG1v1i7UhSUg75lwEnwMg==}
+  '@agentic-profile/common@0.5.4':
+    resolution: {integrity: sha512-OUfC9wYTpT9ZucaNAlc+BjayUF2ICqzNJLAjnvsqYW9mtcG03ItcG3Z2zW2nLkt3+W/7tram3K5ufrvnLeLX7g==}
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -2274,7 +2274,7 @@ packages:
 
 snapshots:
 
-  '@agentic-profile/common@0.5.1':
+  '@agentic-profile/common@0.5.4':
     dependencies:
       did-resolver: 4.1.0
       loglevel: 1.9.2

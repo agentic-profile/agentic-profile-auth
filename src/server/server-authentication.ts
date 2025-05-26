@@ -47,13 +47,20 @@ function unpackCompactJws( jws: string ) {
     return { header, payload, b64uSignature };
 }
 
-// authorization: "Agentic <JSON encoded auth token>"
-// JSON encoded token: { id: number, sessionKey: string }
+/** 
+ * Handle an HTTP authorization header
+ * @param authorization - the authorization header value, of the form "Agentic <JWT>"
+ * @param store - the client agent session store
+ * @param didResolver - the DID resolver
+ * @returns a ClientAgentSession, or null if challenge ID was found but is now invalid
+ * @throws {Error} if authorization header is invalid.  If the challenge
+ *   ID is found but is now invalid, then null is returned.
+ */ 
 export async function handleAuthorization(
     authorization: string,
     store: ClientAgentSessionStore,
     didResolver: Resolver
-): Promise<ClientAgentSession> {
+): Promise<ClientAgentSession | null> {
     const tokens = authorization.trim().split(/\s+/);
     ensure( tokens[0].toLowerCase() === "agentic", "Unsupported authorization type: ", tokens[0] );
     ensure( tokens.length >= 2, "Missing Agentic authorization token" );
@@ -69,7 +76,10 @@ export async function handleAuthorization(
     const challengeId = payload?.challenge?.id;
     ensure( challengeId, "Agent token missing payload.challenge.id", payload );
     const session = await store.fetchClientAgentSession( challengeId );
-    ensure( session, "Failed to find agent session", challengeId );
+    if( !session ) {
+        log.warn( "Failed to find agent session", challengeId );
+        return null;
+    }
 
     if( !session!.authToken ) {
         // session has not started yet, so validate auth token
