@@ -9,7 +9,7 @@ import {
 import {
     matchingFragmentIds,
     removeFragmentId,
-    resolveFragmentId
+    pruneFragmentId
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
 import log from "loglevel";
@@ -61,10 +61,9 @@ export async function resolveVerificationKey( agentDid: DID, profileResolver: Pr
             }
 
             // Agentic profile requires verification method ids to be just fragments
-            const { fragment } = resolveFragmentId( verificationId );
-            if( !fragment )
+            const { fragmentId } = pruneFragmentId( verificationId );
+            if( !fragmentId )
                 throw new Error(`Failed to extract fragment id from ${verificationId} in ${profile.id}`);
-            const fragmentId = '#' + fragment;
 
             const found = profile.verificationMethod?.find(e=>e.id === fragmentId);
             if( !found ) {

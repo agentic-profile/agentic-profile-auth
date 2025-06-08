@@ -1,6 +1,6 @@
 {
   "name": "@agentic-profile/auth",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "Agentic Profile library for discovery, authentication, and communication with AI Agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,8 +10,11 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "exports": {
-    "import": "./dist/index.js",
-    "require": "./dist/index.cjs"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
   "files": [
     "dist",
@@ -30,7 +33,7 @@
   },
   "homepage": "https://github.com/agentic-profile/agentic-profile-auth#readme",
   "dependencies": {
-    "@agentic-profile/common": "^0.5.4",
+    "@agentic-profile/common": "^0.6.0",
     "@noble/ed25519": "^2.2.3",
     "did-resolver": "^4.1.0",
     "loglevel": "^1.9.2"

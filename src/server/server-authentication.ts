@@ -114,7 +114,7 @@ async function validateAuthToken(
     // verify publicKey in signature is from user specified in agentDid
     const { didDocument, didResolutionMetadata } = await didResolver.resolve( agentDid );
     const { error } = didResolutionMetadata;
-    ensure( !error, 'Failed to resolve agentic profile from DID', error );
+    ensure( !error, 'Failed to resolve agentic profile from DID:', error );
     ensure( didDocument, "DID resolver failed to return agentic profile" );
 
     const profile = didDocument as AgenticProfile;

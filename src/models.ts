@@ -10,11 +10,11 @@ export type OpaqueChallenge = any;
 // Challenge when no Authorization token provided, or it is invalid
 //
 
-export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.5";
+export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.6";
 
 // Body of HTTP 401 response for endpoint that requires authentication
 export interface AgenticChallenge {
-    type: "agentic-challenge/0.5",
+    type: "agentic-challenge/0.6",
     challenge: OpaqueChallenge,  // opaque string or object
 }
 
