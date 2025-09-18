@@ -145,41 +145,54 @@ async function validateAuthToken(
 // Utility
 //
 
+/*
+* NOTES:
+* - The verificationID MUST be present in the profile.  An identity/agent cannot
+*   be verified by pointing to another arbitrary DID for the verification method.
+*/
+
 async function resolveVerificationMethod(
     profile: AgenticProfile,
     agentDid: DID,
     verificationId: FragmentID,
     didResolver: Resolver
 ) {
-    // find agent
-    const agent = profile.service?.find(e=>matchingFragmentIds( e.id, agentDid ) ) as AgentService;
-    if( !agent )
-        throw new Error('Failed to find agent service for ' + agentDid );
+    // quick sanity
+    const [did, fragmentId] = agentDid.split('#');
+    ensure( did === profile.id, `Agent ${agentDid} does not match profile ID ${profile.id}` );
 
-    // does this agent have the indicated verification?
-    let methodOrId = agent.capabilityInvocation?.find(e=>matchingFragmentIds(e, verificationId));
-    ensure( methodOrId, "Verification id does not match any entries in the agents capabilityInvocation list:", verificationId );
-    if( isObject( methodOrId ) ) {
-        // if the verification method is scoped to the agent/service, then simply return it
-        return methodOrId as VerificationMethod;
-    }
-    else if( typeof methodOrId !== 'string' )
-        throw new Error("Unexpected capabilityInvocation type: " + methodOrId );
+    // is an agent named (with a fragment?)
+    if( fragmentId ) {
+        // find agent
+        const agent = profile.service?.find(e=>matchingFragmentIds( e.id, agentDid ) ) as AgentService;
+        if( !agent )
+            throw new Error('Failed to find agent service for ' + agentDid );
 
-    // is this verification method in another did document/agentic profile?
-    const linkedDid = removeFragmentId( methodOrId );
-    if( profile.id !== linkedDid ) {
-        log.debug( `Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
-        const { didDocument, didResolutionMetadata } = await didResolver.resolve( linkedDid );
-        const { error } = didResolutionMetadata;
-        ensure( !error, 'Failed to resolve agentic profile from DID', error );
-        ensure( didDocument, "DID resolver failed to return agentic profile" );
+        // does this agent have the indicated verification?
+        let methodOrId = agent.capabilityInvocation?.find(e=>matchingFragmentIds(e, verificationId));
+        ensure( methodOrId, `Verification id ${verificationId} does not match any entries in the agents capabilityInvocation list ${agentDid}` );
+        if( isObject( methodOrId ) ) {
+            // if the verification method is scoped to the agent/service, then simply return it
+            return methodOrId as VerificationMethod;
+        }
+        else if( typeof methodOrId !== 'string' )
+            throw new Error(`Unexpected capabilityInvocation ${methodOrId} for verification id ${verificationId} of ${agentDid}`);
 
-        profile = didDocument as AgenticProfile;
+        // is this verification method in another did document/agentic profile?
+        const linkedDid = removeFragmentId( methodOrId );
+        if( profile.id !== linkedDid ) {
+            log.debug( `Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
+            const { didDocument, didResolutionMetadata } = await didResolver.resolve( linkedDid );
+            const { error } = didResolutionMetadata;
+            ensure( !error, 'Failed to resolve agentic profile from DID', error );
+            ensure( didDocument, `DID resolver failed to return agentic profile for ${methodOrId} from ${agentDid}` );
+
+            profile = didDocument as AgenticProfile;
+        }
     }
 
     const verificationMethod = profile.verificationMethod?.find(e=>matchingFragmentIds(e.id, verificationId ) );
-    ensure( verificationMethod, "Verification id does not match any listed verification methods:", verificationId );
+    ensure( verificationMethod, `Verification id ${verificationId} does not match any listed verification methods in ${profile.id} from ${agentDid}` );
 
     return verificationMethod;
 }

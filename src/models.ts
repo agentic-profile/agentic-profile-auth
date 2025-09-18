@@ -57,7 +57,7 @@ export interface ClientAgentSessionUpdates {
     authToken?: string
 }
 
-export interface ClientAgentSessionStore  {
+export interface ClientAgentSessionStore {
     createClientAgentSession( challenge:string ): Promise<number>,
     fetchClientAgentSession( id:number ): Promise<ClientAgentSession | undefined>,
     updateClientAgentSession( id:number, updates:ClientAgentSessionUpdates ): Promise<void>
