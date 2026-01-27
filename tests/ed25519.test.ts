@@ -45,7 +45,7 @@ describe("Ed25519", () => {
         expect( await verify( mutateBase64( b64uSignature ), message, b64uPublicKey ) ).toBe( false );
         expect( verify( null as any, message, b64uPublicKey ) ).rejects.toThrow( "Ed25519 verify() requires a signature" );
         expect( verify( undefined as any, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() requires a signature");
-        expect( verify( 'a' + b64uSignature, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: Uint8Array of valid length expected");
+        expect( verify( 'a' + b64uSignature, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: Uint8Array expected");
         expect( verify( '!' + b64uSignature, message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: Invalid character");
         expect( verify( b64uSignature.substring(1), message, b64uPublicKey ) ).rejects.toThrow("Ed25519 verify() failed: The string to be decoded is not correctly encoded.");
     });
