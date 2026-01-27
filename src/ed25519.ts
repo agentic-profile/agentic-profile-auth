@@ -4,12 +4,12 @@ import {
     getPublicKeyAsync,
     utils
 } from "@noble/ed25519";
-import { ensure } from "@agentic-profile/common";
 import {
+    ensure,
     EdDSAPrivateJWK,
     EdDSAPublicJWK,
     JWKSet
-} from "@agentic-profile/common/schema";
+} from "@agentic-profile/common";
 
 import {
     base64UrlToByteArray,

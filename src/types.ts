@@ -2,14 +2,16 @@ import {
     DID,
     FragmentID,
     UserID
-} from "@agentic-profile/common/schema";
+} from "@agentic-profile/common";
 
 export type OpaqueChallenge = any;
+
 
 //
 // Challenge when no Authorization token provided, or it is invalid
 //
 
+export const AGENTIC_SCHEME = "Agentic";
 export const AGENTIC_CHALLENGE_TYPE = "agentic-challenge/0.6";
 
 // Body of HTTP 401 response for endpoint that requires authentication

@@ -1,11 +1,11 @@
 import { signAsync } from "@noble/ed25519";
-import { EdDSAPrivateJWK } from "@agentic-profile/common/schema";
+import { EdDSAPrivateJWK } from "@agentic-profile/common";
 
 import {
     AgenticJwsPayload,
     Attestation,
     OpaqueChallenge
-} from "../models.js"
+} from "../types.js"
 import {
     byteArrayToBase64Url,
     objectToBase64Url,
