@@ -182,19 +182,29 @@ async function resolveVerificationMethod(
 
         // is this verification method in another did document/agentic profile?
         const linkedDid = parseDid(methodOrId).did;
-        if (profile.id !== linkedDid) {
-            log.debug(`Redirecting to linked agentic profile to resolve verification method ${linkedDid}`)
-            const { didDocument, didResolutionMetadata } = await didResolver.resolve(linkedDid);
-            const { error } = didResolutionMetadata;
-            ensure(!error, 'Failed to resolve agentic profile from DID', error);
-            ensure(didDocument, `DID resolver failed to return agentic profile for ${methodOrId} from ${agentDid}`);
-
-            profile = didDocument as AgenticProfile;
-        }
+        if (profile.id !== linkedDid)
+            profile = await resolveIndirection(linkedDid, didResolver);
     }
+
+    // Is the verificationId an indirection?
+    if( profile.verificationMethod?.find(e => typeof e === 'string' && e === verificationId))
+        profile = await resolveIndirection(verificationId, didResolver);
 
     const verificationMethod = profile.verificationMethod?.find(e => matchingFragmentIds(e.id, verificationId));
     ensure(verificationMethod, `Verification id ${verificationId} does not match any listed verification methods in ${profile.id} from ${agentDid}`);
 
     return verificationMethod;
+}
+
+async function resolveIndirection(
+    indirection: DID,
+    didResolver: Resolvable
+) {
+    const { did } = parseDid(indirection);
+    log.debug(`Redirecting to linked agentic profile to resolve verification method ${did}`)
+    const { didDocument, didResolutionMetadata } = await didResolver.resolve(did);
+    const { error } = didResolutionMetadata;
+    ensure(!error, 'Failed to resolve agentic profile from DID', error);
+    ensure(didDocument, `DID resolver failed to return agentic profile for ${indirection} from ${did}`);
+    return didDocument as AgenticProfile;
 }

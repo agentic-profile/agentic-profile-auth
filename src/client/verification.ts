@@ -51,11 +51,12 @@ export async function resolveVerificationKey(agentDid: DID, profileResolver: Pro
         // "naked" agent did, derive key from verificationMethods
         for (const idOrMethod of profile.verificationMethod || []) {
             if (typeof idOrMethod === 'string') {
+                // resolve in another DID document... (need to update verificationId to include the fragment)
                 const did = idOrMethod as string;
                 try {
                     const result = await resolveVerificationKey( did, profileResolver, recursion );
                     if( result )
-                        return result;
+                        return { ...result, verificationId: did };
                 } catch(err) {
                     log.warn( `Unable to resolve entity verification method ${did} from ${agentDid}; Continuing search...` );
                 }
