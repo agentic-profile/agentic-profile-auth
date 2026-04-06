@@ -23,7 +23,7 @@ import {
     AGENTIC_SCHEME,
     ClientAgentSession,
     ClientAgentSessionStore,
-    ClientAgentSessionUpdates
+    ClientAgentSessionUpdate
 } from "../types.js"
 import {
     base64UrlToObject,
@@ -33,7 +33,7 @@ import {
 
 export async function createChallenge(store: ClientAgentSessionStore) {
     const secret = base64ToBase64Url(crypto.randomBytes(32).toString("base64"));
-    const id = await store.createClientAgentSession(secret);
+    const id = await store.create(secret);
     return {
         type: AGENTIC_CHALLENGE_TYPE,
         challenge: { id, secret }
@@ -76,7 +76,7 @@ export async function handleAuthorization(
 
     const challengeId = payload?.challenge?.id;
     ensure(challengeId, "Agent token missing payload.challenge.id", payload);
-    const session = await store.fetchClientAgentSession(challengeId);
+    const session = await store.read(challengeId);
     if (!session) {
         log.warn("Failed to find agent session", challengeId);
         return null;
@@ -135,8 +135,8 @@ async function validateAuthToken(
     const isValid = await verify(b64uSignature!, message, b64uPublicKey!);
     ensure(isValid, "Invalid signed challenge and attestation", authToken, b64uPublicKey);
 
-    const sessionUpdates = { agentDid, authToken } as ClientAgentSessionUpdates;
-    await store.updateClientAgentSession(challenge.id, sessionUpdates);
+    const sessionUpdates = { agentDid, authToken } as ClientAgentSessionUpdate;
+    await store.update(challenge.id, sessionUpdates);
 
     return { ...session, ...sessionUpdates } as ClientAgentSession;
 }

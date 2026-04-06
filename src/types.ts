@@ -46,23 +46,26 @@ export interface Attestation {
 // On the remote/server side, session tracks client/agent that is communicating with the server
 //
 
+export type ClientAgentSessionId = number | string;
+
 export interface ClientAgentSession {
-    id: number,
+    id: ClientAgentSessionId,
     created: Date,
     challenge: string,
     agentDid: DID,           // SHOULD include agent/service qualifier fragment, e.g. did:web:example.com:dave#agent-7
     authToken: string        // compact JWT presented by client as HTTPS "Authorization: Agentic <authToken>"
 }
 
-export interface ClientAgentSessionUpdates {
-    agentDid?: DID,
-    authToken?: string
+export interface ClientAgentSessionUpdate {
+    agentDid: DID,
+    authToken: string
 }
 
 export interface ClientAgentSessionStore {
-    createClientAgentSession( challenge:string ): Promise<number>,
-    fetchClientAgentSession( id:number ): Promise<ClientAgentSession | undefined>,
-    updateClientAgentSession( id:number, updates:ClientAgentSessionUpdates ): Promise<void>
+    create( challenge:string ): Promise<ClientAgentSessionId>,
+    read( id:ClientAgentSessionId ): Promise<ClientAgentSession | undefined>,
+    update( id:ClientAgentSessionId, update:ClientAgentSessionUpdate ): Promise<boolean>,
+    delete( id:ClientAgentSessionId): Promise<void>
 }
 
 
@@ -88,7 +91,7 @@ export interface RemoteAgentSessionUpdate {
 }
 
 export interface RemoteAgentSessionStore {
-    fetchRemoteAgentSession( key: RemoteAgentSessionKey ): Promise<RemoteAgentSession | undefined>,
-    updateRemoteAgentSession( key: RemoteAgentSessionKey, update: RemoteAgentSessionUpdate ): Promise<void>,
-    deleteRemoteAgentSession( key: RemoteAgentSessionKey ): Promise<void>,
+    upsert( key: RemoteAgentSessionKey, update: RemoteAgentSessionUpdate ): Promise<void>,
+    read( key: RemoteAgentSessionKey ): Promise<RemoteAgentSession | undefined>,
+    delete( key: RemoteAgentSessionKey ): Promise<void>,
 }

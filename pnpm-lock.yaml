@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@agentic-profile/common':
-        specifier: ^0.7.1
-        version: 0.7.1
+        specifier: ^0.7.4
+        version: 0.7.4
       '@noble/ed25519':
         specifier: ^2.2.3
         version: 2.3.0
@@ -81,8 +81,8 @@ importers:
 
 packages:
 
-  '@agentic-profile/common@0.7.1':
-    resolution: {integrity: sha512-rY7lquiHWlErGu5ybAtIwhECTLVAm9uwlSPSbG+LHUomao1h1e6+3HEM/lJIL4I18iu/yYHUtkm2/DvnMbPABg==}
+  '@agentic-profile/common@0.7.4':
+    resolution: {integrity: sha512-XqILAjpWDrlN0Xn4+G15o5fFm6R6IoD1WDzjv2s+04n18DgzfBs9JmaYyqFEyZT+kQlUtvErk4vpzL1hefyM3g==}
 
   '@babel/code-frame@7.28.6':
     resolution: {integrity: sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q==}
@@ -2412,7 +2412,7 @@ packages:
 
 snapshots:
 
-  '@agentic-profile/common@0.7.1':
+  '@agentic-profile/common@0.7.4':
     dependencies:
       did-resolver: 4.1.0
       loglevel: 1.9.2

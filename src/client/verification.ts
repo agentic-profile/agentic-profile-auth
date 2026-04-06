@@ -42,15 +42,25 @@ export async function generateAuthToken({ agentDid, agenticChallenge, profileRes
     return await signChallenge({ challenge, attestation, privateJwk });
 }
 
-export async function resolveVerificationKey(agentDid: DID, profileResolver: ProfileAndKeyringResolver): Promise<VerificationKey> {
+export async function resolveVerificationKey(agentDid: DID, profileResolver: ProfileAndKeyringResolver, recursion?: string[] ): Promise<VerificationKey> {
+    recursion = [...(recursion ?? []), agentDid];
     let { profile, keyring } = await profileResolver(agentDid);
 
     const { fragment } = parseDid(agentDid);
     if (!fragment) {
         // "naked" agent did, derive key from verificationMethods
         for (const idOrMethod of profile.verificationMethod || []) {
-            if (typeof idOrMethod === 'string')
-                continue; // skip references to other DID documents
+            if (typeof idOrMethod === 'string') {
+                const did = idOrMethod as string;
+                try {
+                    const result = await resolveVerificationKey( did, profileResolver, recursion );
+                    if( result )
+                        return result;
+                } catch(err) {
+                    log.warn( `Unable to resolve entity verification method ${did} from ${agentDid}; Continuing search...` );
+                }
+                continue;
+            }
             if (typeof idOrMethod !== 'object')
                 throw new Error(`INVALID agentic profile, verification method is of unknown type: ${typeof idOrMethod} for ${agentDid}`);
 
