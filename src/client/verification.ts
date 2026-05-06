@@ -9,11 +9,12 @@ import {
     parseDid
 } from "@agentic-profile/common";
 import { VerificationMethod } from "did-resolver";
-import log from "loglevel";
+import { getLogger, ServerError } from "@agentic-profile/common";
 
 import { AgenticChallenge } from "../types.js";
 import { signChallenge } from "./client-authentication.js";
 
+const log = getLogger("auth.client-verification");
 
 export interface ProfileAndKeyring {
     profile: AgenticProfile,
@@ -63,7 +64,10 @@ export async function resolveVerificationKey(agentDid: DID, profileResolver: Pro
                 continue;
             }
             if (typeof idOrMethod !== 'object')
-                throw new Error(`INVALID agentic profile, verification method is of unknown type: ${typeof idOrMethod} for ${agentDid}`);
+                throw new ServerError({
+                    kind: 'Conflict',
+                    message: `INVALID agentic profile, verification method is of unknown type: ${typeof idOrMethod} for ${agentDid}`
+                });
 
             const verificationId = (idOrMethod as VerificationMethod).id;
             const result = resolvePrivateJwk(agentDid, idOrMethod, verificationId, keyring, profile);
@@ -71,7 +75,10 @@ export async function resolveVerificationKey(agentDid: DID, profileResolver: Pro
                 return result;
         }
 
-        throw new Error("Failed to derive verification method for " + agentDid);
+        throw new ServerError({
+            kind: 'Conflict',
+            message: "Failed to derive verification method for " + agentDid
+        });
     }
 
     // Either the fragment matches a service, or a verification method in the same document
@@ -79,13 +86,19 @@ export async function resolveVerificationKey(agentDid: DID, profileResolver: Pro
     if (!agent) {
         const vm = profile.verificationMethod?.find(e => matchingFragmentIds(e.id, agentDid));
         if (!vm)
-            throw new Error("Failed to find agent service or verification method for " + agentDid);
+            throw new ServerError({
+                kind: 'Conflict',
+                message: "Failed to find agent service or verification method for " + agentDid
+            });
 
         const resolution = await resolveIdOrMethod(vm, profile, keyring, profileResolver, agentDid);
         if (resolution)
             return resolution;
         else
-            throw new Error("Failed to find agent service or verification method for " + agentDid);
+            throw new ServerError({
+                kind: 'Conflict',
+                message: "Failed to find agent service or verification method for " + agentDid
+            });
     }
 
     // agent DID includes service id, so pick a verification method of the service...
@@ -95,7 +108,10 @@ export async function resolveVerificationKey(agentDid: DID, profileResolver: Pro
             return resolution;
     }
 
-    throw new Error("Failed to find a verification key for " + agentDid);
+    throw new ServerError({
+        kind: 'Conflict',
+        message: "Failed to find a verification key for " + agentDid
+    });
 }
 
 async function resolveIdOrMethod(
@@ -120,7 +136,10 @@ async function resolveIdOrMethod(
 
         // Agentic profile requires verification method ids to be just fragments
         if (!fragment)
-            throw new Error(`Failed to extract fragment id from ${verificationId} in ${profile.id}`);
+            throw new ServerError({
+                kind: 'Conflict',
+                message: `Failed to extract fragment id from ${verificationId} in ${profile.id}`
+            });
         const fragmentId = '#' + fragment;
 
         const found = profile.verificationMethod?.find(e => e.id === fragmentId);
@@ -133,7 +152,10 @@ async function resolveIdOrMethod(
         verificationMethod = idOrMethod as VerificationMethod;
         verificationId = verificationMethod.id;
     } else
-        throw new Error(`INVALID agentic profile, verification method is of unknown type: ${typeof idOrMethod} for ${profile.id}`);
+        throw new ServerError({
+            kind: 'Conflict',
+            message: `INVALID agentic profile, verification method is of unknown type: ${typeof idOrMethod} for ${profile.id}`
+        });
 
     return resolvePrivateJwk(agentDid, verificationMethod, verificationId, keyring, profile);
 }
@@ -153,12 +175,18 @@ function resolvePrivateJwk(
 
     const b64uPublicKey = verificationMethod.publicKeyJwk?.x;    // Only for JsonWebKey2020!
     if (!b64uPublicKey)
-        throw new Error(`Failed to find public key for ${agentDid} verificationMethod ${verificationId}`);
+        throw new ServerError({
+            kind: 'InternalError',
+            message: `Failed to find public key for ${agentDid} verificationMethod ${verificationId}`
+        });
 
     const privateJwk = keyring.find(e => e.b64uPublicKey === b64uPublicKey)?.privateJwk
     if (!privateJwk)
         if (failOnUnavailableKey)
-            throw new Error(`Failed to find private key for ${agentDid} public key ${b64uPublicKey}`);
+            throw new ServerError({
+                kind: 'InternalError',
+                message: `Failed to find private key for ${agentDid} public key ${b64uPublicKey}`
+            });
         else
             return undefined;
 

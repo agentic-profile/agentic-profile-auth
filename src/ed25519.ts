@@ -5,17 +5,18 @@ import {
     utils
 } from "@noble/ed25519";
 import {
-    ensure,
     EdDSAPrivateJWK,
     EdDSAPublicJWK,
-    JWKSet
+    JWKSet,
+    ServerError
 } from "@agentic-profile/common";
 
 import {
     base64UrlToByteArray,
     byteArrayToBase64Url,
     stringToByteArray
-} from "./b64u.js"
+} from "./b64u.js";
+import { ensure } from "./misc.js";
 
 
 export async function createEdDsaJwk() {
@@ -47,7 +48,11 @@ export async function sign( message:string, base64UrlPrivateKey:string ) {
         const signature = await signAsync( stringToByteArray( message ), privateKey );
         return byteArrayToBase64Url( signature );
     } catch( err: any ) {
-        throw new Error("Ed25519 sign() failed: " + err.message );
+        throw new ServerError({
+            kind: 'InternalError',
+            message: "Ed25519 sign() failed: " + err.message,
+            cause: err
+        });
     }
 }
 
@@ -60,6 +65,10 @@ export async function verify( base64UrlSignature:string, message:string, base64U
         const signature = base64UrlToByteArray( base64UrlSignature );
         return await verifyAsync( signature, stringToByteArray( message ), publicKey );
     } catch( err: any ) {
-        throw new Error("Ed25519 verify() failed: " + err.message );
+        throw new ServerError({
+            kind: 'InternalError',
+            message: "Ed25519 verify() failed: " + err.message,
+            cause: err
+        });
     }
 }

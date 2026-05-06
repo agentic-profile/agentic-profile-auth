@@ -4,15 +4,15 @@ import {
     AgenticProfile,
     DID,
     FragmentID,
-    parseDid
+    getLogger,
+    parseDid,
+    ServerError
 } from "@agentic-profile/common";
 import {
-    ensure,
     isObject,
     matchingFragmentIds
 } from "@agentic-profile/common";
 import { Resolvable, VerificationMethod } from "did-resolver";
-import log from "loglevel";
 
 import { verify } from "../ed25519.js";
 import {
@@ -29,7 +29,10 @@ import {
     base64UrlToObject,
     base64ToBase64Url,
 } from "../b64u.js";
+import { ensure } from "../misc.js";
 
+
+const log = getLogger("auth.server-authentication");
 
 export async function createChallenge(store: ClientAgentSessionStore) {
     const secret = base64ToBase64Url(crypto.randomBytes(32).toString("base64"));
@@ -71,14 +74,17 @@ export async function handleAuthorization(
     try {
         ({ payload } = unpackCompactJws(authToken));
     } catch (err: any) {
-        throw new Error('Failed to parse agentic token. ' + err.message + " token: " + authToken);
+        throw new ServerError({
+            kind: 'MalformedRequest',
+            message: 'Failed to parse agentic token. ' + err.message + " token: " + authToken
+        });
     }
 
     const challengeId = payload?.challenge?.id;
     ensure(challengeId, "Agent token missing payload.challenge.id", payload);
     const session = await store.read(challengeId);
     if (!session) {
-        log.warn("Failed to find agent session", challengeId);
+        log.info("Failed to find agent session", challengeId);
         return null;
     }
 
@@ -88,7 +94,10 @@ export async function handleAuthorization(
     }
 
     if (session!.authToken !== authToken)
-        throw new Error("Incorrect authorization token; Does not match one used for validation");
+        throw new ServerError({
+            kind: 'Conflict',
+            message: "Incorrect authorization token; Does not match one used for validation"
+        });
     else
         return session!;
 }
@@ -168,7 +177,10 @@ async function resolveVerificationMethod(
         // find agent
         const agent = profile.service?.find(e => matchingFragmentIds(e.id, agentDid)) as AgentService;
         if (!agent)
-            throw new Error('Failed to find agent service for ' + agentDid);
+            throw new ServerError({
+                kind: 'Conflict',
+                message:'Failed to find agent service for ' + agentDid
+            });
 
         // does this agent have the indicated verification?
         let methodOrId = agent.capabilityInvocation?.find(e => matchingFragmentIds(e, verificationId));
@@ -178,7 +190,10 @@ async function resolveVerificationMethod(
             return methodOrId as VerificationMethod;
         }
         else if (typeof methodOrId !== 'string')
-            throw new Error(`Unexpected capabilityInvocation ${methodOrId} for verification id ${verificationId} of ${agentDid}`);
+            throw new ServerError({
+                kind: 'Conflict',
+                message: `Unexpected capabilityInvocation ${methodOrId} for verification id ${verificationId} of ${agentDid}`
+            });
 
         // is this verification method in another did document/agentic profile?
         const linkedDid = parseDid(methodOrId).did;
